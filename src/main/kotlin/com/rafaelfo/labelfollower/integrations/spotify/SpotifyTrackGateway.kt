@@ -2,10 +2,8 @@ package com.rafaelfo.labelfollower.integrations.spotify
 
 import com.rafaelfo.labelfollower.integrations.httputils.RafaHttp
 import com.rafaelfo.labelfollower.integrations.httputils.parsedBody
-import com.rafaelfo.labelfollower.models.Artist
-import com.rafaelfo.labelfollower.models.Label
-import com.rafaelfo.labelfollower.models.Track
-import com.rafaelfo.labelfollower.usecases.TrackGateway
+import com.rafaelfo.labelfollower.integrations.spotify.models.SpotifyArtist
+import com.rafaelfo.labelfollower.integrations.spotify.models.SpotifyTrack
 import org.springframework.stereotype.Component
 
 @Component
@@ -13,13 +11,9 @@ class SpotifyTrackGateway(
     private val spotifyAuth: SpotifyAuth,
     private val spotifyConfig: SpotifyConfig,
     private val rafaHttp: RafaHttp,
-) : TrackGateway {
+) {
 
-    override fun getLabel(track: Track): Label {
-        TODO("Not yet implemented")
-    }
-
-    override fun findTrackBy(isrc: String): Track {
+    fun findTrackBy(isrc: String): SpotifyTrack {
         val response = rafaHttp.get(
             url = spotifyConfig.apiUri,
             path = "v1/search",
@@ -30,7 +24,7 @@ class SpotifyTrackGateway(
             ),
         ).parsedBody<SearchResponse>()
 
-        return response.tracks.items.first().toTrack()
+        return response.tracks.items.first().toSpotifyTrack()
     }
 }
 
@@ -48,9 +42,9 @@ private data class TrackResponse(
     val external_ids: ExternalIds,
 ) {
 
-    fun toTrack() = Track(
+    fun toSpotifyTrack() = SpotifyTrack(
         name = name,
-        artists = artists.map { it.toArtist() }.toSet(),
+        artists = artists.map { it.toSpotifyArtist() }.toSet(),
         isrc = external_ids.isrc,
     )
 }
@@ -59,7 +53,7 @@ private data class ArtistResponse(
     val name: String,
 ) {
 
-    fun toArtist() = Artist(
+    fun toSpotifyArtist() = SpotifyArtist(
         name = name,
     )
 }
