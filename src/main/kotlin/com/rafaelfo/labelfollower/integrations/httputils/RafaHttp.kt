@@ -64,4 +64,7 @@ class RafaHttp {
     }
 }
 
-private fun Request.execute() = OkHttpClient().newCall(this).execute()
+private fun Request.execute(): Response {
+    println("RafaHttp: $this")
+    return OkHttpClient().newCall(this).execute()
+}

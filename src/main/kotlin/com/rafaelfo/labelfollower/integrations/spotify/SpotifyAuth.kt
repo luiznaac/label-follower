@@ -25,10 +25,22 @@ class SpotifyAuth(
         return token!!
     }
 
-    private fun shouldRequestNewToken() =
-        token == null || (tokenExpiresAt != null && clock.instant().isAfter(tokenExpiresAt))
+    private fun shouldRequestNewToken(): Boolean {
+        if (token == null) {
+            println("SpotifyAuth: No token set")
+            return true
+        }
+
+        if (tokenExpiresAt != null && clock.instant().isAfter(tokenExpiresAt)) {
+            println("SpotifyAuth: Token expired")
+            return true
+        }
+
+        return false
+    }
 
     private fun requestNewToken() {
+        println("SpotifyAuth: Requesting new token")
         val response = rafaHttp.post(
             url = spotifyConfig.authUri,
             body = mapOf("grant_type" to "client_credentials"),
