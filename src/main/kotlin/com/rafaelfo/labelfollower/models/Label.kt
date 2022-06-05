@@ -1,6 +1,6 @@
 package com.rafaelfo.labelfollower.models
 
-class Label(
+data class Label(
     val name: String,
     val copyright: String,
 )

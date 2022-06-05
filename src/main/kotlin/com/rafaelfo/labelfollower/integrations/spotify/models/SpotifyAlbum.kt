@@ -1,11 +1,13 @@
 package com.rafaelfo.labelfollower.integrations.spotify.models
 
+import com.rafaelfo.labelfollower.integrations.spotify.responses.TrackItems
 import com.rafaelfo.labelfollower.models.Label
 
 data class SpotifyAlbum(
     val id: String,
     val name: String,
     val copyrights: List<SpotifyCopyrights>?,
+    val tracks: TrackItems?,
     val label: String?,
 ) {
 

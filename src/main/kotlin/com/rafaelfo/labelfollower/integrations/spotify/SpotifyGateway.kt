@@ -1,5 +1,6 @@
 package com.rafaelfo.labelfollower.integrations.spotify
 
+import com.rafaelfo.labelfollower.integrations.spotify.models.SpotifyAlbum
 import com.rafaelfo.labelfollower.models.Label
 import com.rafaelfo.labelfollower.models.Track
 import com.rafaelfo.labelfollower.usecases.ExternalInfoGateway
@@ -23,6 +24,9 @@ class SpotifyGateway(
     }
 
     override fun getTracksFrom(label: Label): Set<Track> {
-        return spotifyLabelGateway.findTracksBy(label).map { it.toTrack() }.toSet()
+        val labelAlbums = spotifyLabelGateway.findAlbumsBy(label)
+        val fullAlbums = spotifyAlbumGateway.findAlbumsBy(labelAlbums)
+        println(fullAlbums.filter { it.toLabel() == label }.flatMap { it.tracks!!.items })
+        TODO()
     }
 }
