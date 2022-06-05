@@ -8,4 +8,7 @@ data class SearchResponse(
 
 data class TrackItems(
     val items: List<SpotifyTrack>,
+    val limit: Int,
+    val offset: Int,
+    val total: Int,
 )

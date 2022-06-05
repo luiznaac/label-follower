@@ -15,6 +15,10 @@ class SpotifyLabelGateway(
 ) {
 
     fun findTracksBy(label: Label): Set<SpotifyTrack> {
+        return getTracks(0, label)
+    }
+
+    private fun getTracks(startingOffset: Int, label: Label): Set<SpotifyTrack> {
         val response = rafaHttp.get(
             url = spotifyConfig.apiUri,
             path = "v1/search",
@@ -22,9 +26,20 @@ class SpotifyLabelGateway(
             queryParameters = mapOf(
                 "q" to "label:\"${label.name}\"",
                 "type" to "track",
+                "limit" to LIMIT.toString(),
+                "offset" to startingOffset.toString(),
             ),
         ).parsedBody<SearchResponse>()
 
+        if (response.tracks.total > startingOffset + LIMIT && startingOffset + LIMIT < 1000) {
+            val nextOffset = startingOffset + LIMIT
+            return getTracks(nextOffset, label) + response.tracks.items
+        }
+
         return response.tracks.items.toSet()
+    }
+
+    companion object {
+        private const val LIMIT = 50
     }
 }
