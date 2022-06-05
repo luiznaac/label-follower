@@ -2,7 +2,6 @@ package com.rafaelfo.labelfollower.usecases
 
 import com.rafaelfo.labelfollower.models.Track
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -10,7 +9,7 @@ import io.mockk.mockk
 
 class TrackFinderTest : StringSpec({
 
-    val trackGateway = mockk<TrackGateway>()
+    val trackGateway = mockk<ExternalInfoGateway>()
     val finder = TrackFinder(trackGateway)
 
     "should correctly find track by isrc" {

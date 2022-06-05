@@ -10,23 +10,22 @@ import io.mockk.mockk
 
 class LabelIntrospectorTest : StringSpec({
 
-    val trackGateway = mockk<TrackGateway>()
-    val labelGateway = mockk<LabelGateway>()
-    val introspector = LabelIntrospector(trackGateway, labelGateway)
+    val externalInfoGateway = mockk<ExternalInfoGateway>()
+    val introspector = LabelIntrospector(externalInfoGateway)
 
     "should correctly get label from track and search for tracks" {
         val label = Label(name = "Label 1", copyright = "Copyrigth 1")
         val track1 = Track(name = "Track 1", artists = emptySet(), isrc = "AABB123")
         val track2 = Track(name = "Track 2", artists = emptySet(), isrc = "CCDD456")
 
-        coEvery { trackGateway.getLabel(any()) } returns label
-        coEvery { labelGateway.getTracksFrom(any()) } returns setOf(track1, track2)
+        coEvery { externalInfoGateway.getLabel(any()) } returns label
+        coEvery { externalInfoGateway.getTracksFrom(any()) } returns setOf(track1, track2)
 
         introspector.introspectFrom(track1) shouldBe setOf(track1, track2)
 
         coVerify(exactly = 1) {
-            trackGateway.getLabel(track1.isrc)
-            labelGateway.getTracksFrom(label)
+            externalInfoGateway.getLabel(track1.isrc)
+            externalInfoGateway.getTracksFrom(label)
         }
     }
 })
