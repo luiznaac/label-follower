@@ -24,10 +24,6 @@ class DevelopmentTrackGateway(
         TODO("Not yet implemented")
     }
 
-    override fun getTracksFrom(label: Label): Set<Track> {
-        TODO("Not yet implemented")
-    }
-
     override fun findTrackBy(isrc: String): Track {
         return tracks.find { it.isrc == isrc }!!
     }

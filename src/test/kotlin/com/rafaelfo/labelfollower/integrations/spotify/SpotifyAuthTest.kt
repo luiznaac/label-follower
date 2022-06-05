@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import com.rafaelfo.labelfollower.integrations.httputils.RafaHttp
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -25,6 +26,7 @@ class SpotifyAuthTest : StringSpec({
     val gson = GsonBuilder().create()
 
     beforeEach {
+        clearMocks(rafaHttp)
         auth = SpotifyAuth(spotifyConfig, rafaHttp, clock)
     }
 

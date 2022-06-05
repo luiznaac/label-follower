@@ -4,10 +4,11 @@ import com.rafaelfo.labelfollower.models.Track
 
 class LabelIntrospector(
     private val trackGateway: TrackGateway,
+    private val labelGateway: LabelGateway,
 ) {
 
     fun introspectFrom(track: Track): Set<Track> {
-        return trackGateway.getTracksFrom(
+        return labelGateway.getTracksFrom(
             track.getLabel()
         )
     }

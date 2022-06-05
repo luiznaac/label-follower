@@ -3,9 +3,7 @@ package com.rafaelfo.labelfollower.usecases
 import com.rafaelfo.labelfollower.models.Label
 import com.rafaelfo.labelfollower.models.Track
 
-interface TrackGateway {
+interface LabelGateway {
 
-    fun getLabel(track: Track): Label
-
-    fun findTrackBy(isrc: String): Track
+    fun getTracksFrom(label: Label): Set<Track>
 }
