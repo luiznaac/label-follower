@@ -8,10 +8,13 @@ import org.springframework.stereotype.Component
 @Component
 class SpotifyGateway(
     private val spotifyTrackGateway: SpotifyTrackGateway,
+    private val spotifyAlbumGateway: SpotifyAlbumGateway,
 ) : TrackGateway {
 
-    override fun getLabel(track: Track): Label {
-        TODO("Not yet implemented")
+    override fun getLabel(isrc: String): Label {
+        return spotifyTrackGateway.findTrackBy(isrc).run {
+            spotifyAlbumGateway.findAlbumBy(this).toLabel()
+        }
     }
 
     override fun findTrackBy(isrc: String): Track {

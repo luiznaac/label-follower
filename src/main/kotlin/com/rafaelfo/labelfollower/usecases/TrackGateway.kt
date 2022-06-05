@@ -5,7 +5,7 @@ import com.rafaelfo.labelfollower.models.Track
 
 interface TrackGateway {
 
-    fun getLabel(track: Track): Label
+    fun getLabel(isrc: String): Label
 
     fun findTrackBy(isrc: String): Track
 }

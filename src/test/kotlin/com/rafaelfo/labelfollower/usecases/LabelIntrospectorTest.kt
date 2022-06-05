@@ -25,7 +25,7 @@ class LabelIntrospectorTest : StringSpec({
         introspector.introspectFrom(track1) shouldBe setOf(track1, track2)
 
         coVerify(exactly = 1) {
-            trackGateway.getLabel(track1)
+            trackGateway.getLabel(track1.isrc)
             labelGateway.getTracksFrom(label)
         }
     }

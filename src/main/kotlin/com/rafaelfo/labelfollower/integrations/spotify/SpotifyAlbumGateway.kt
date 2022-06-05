@@ -2,35 +2,25 @@ package com.rafaelfo.labelfollower.integrations.spotify
 
 import com.rafaelfo.labelfollower.integrations.httputils.RafaHttp
 import com.rafaelfo.labelfollower.integrations.httputils.parsedBody
+import com.rafaelfo.labelfollower.integrations.spotify.models.SpotifyAlbum
+import com.rafaelfo.labelfollower.integrations.spotify.models.SpotifyArtist
 import com.rafaelfo.labelfollower.integrations.spotify.models.SpotifyTrack
 import org.springframework.stereotype.Component
 
 @Component
-class SpotifyTrackGateway(
+class SpotifyAlbumGateway(
     private val spotifyAuth: SpotifyAuth,
     private val spotifyConfig: SpotifyConfig,
     private val rafaHttp: RafaHttp,
 ) {
 
-    fun findTrackBy(isrc: String): SpotifyTrack {
+    fun findAlbumBy(track: SpotifyTrack): SpotifyAlbum {
         val response = rafaHttp.get(
             url = spotifyConfig.apiUri,
-            path = "v1/search",
+            path = "v1/albums/${track.album.id}",
             headers = mapOf("Authorization" to "Bearer ${spotifyAuth.getToken()}"),
-            queryParameters = mapOf(
-                "q" to "isrc:${isrc}",
-                "type" to "track",
-            ),
-        ).parsedBody<SearchResponse>()
+        ).parsedBody<SpotifyAlbum>()
 
-        return response.tracks.items.first()
+        return response
     }
 }
-
-private data class SearchResponse(
-    val tracks: TrackItems,
-)
-
-private data class TrackItems(
-    val items: List<SpotifyTrack>,
-)

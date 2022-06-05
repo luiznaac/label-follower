@@ -13,5 +13,5 @@ class LabelIntrospector(
         )
     }
 
-    private fun Track.getLabel() = trackGateway.getLabel(this)
+    private fun Track.getLabel() = trackGateway.getLabel(isrc)
 }
