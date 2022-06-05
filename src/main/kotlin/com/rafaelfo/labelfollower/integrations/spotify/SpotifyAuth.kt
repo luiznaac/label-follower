@@ -3,15 +3,32 @@ package com.rafaelfo.labelfollower.integrations.spotify
 import com.rafaelfo.labelfollower.integrations.httputils.RafaHttp
 import com.rafaelfo.labelfollower.integrations.httputils.parsedBody
 import org.springframework.stereotype.Component
+import java.time.Clock
+import java.time.Instant
 import java.util.Base64
 
 @Component
 class SpotifyAuth(
     private val spotifyConfig: SpotifyConfig,
     private val rafaHttp: RafaHttp,
+    private val clock: Clock,
 ) {
 
+    private var token: String? = null
+    private var tokenExpiresAt: Instant? = null
+
     fun getToken(): String {
+        if (shouldRequestNewToken()) {
+            requestNewToken()
+        }
+
+        return token!!
+    }
+
+    private fun shouldRequestNewToken() =
+        token == null || (tokenExpiresAt != null && clock.instant().isAfter(tokenExpiresAt))
+
+    private fun requestNewToken() {
         val response = rafaHttp.post(
             url = spotifyConfig.authUri,
             body = mapOf("grant_type" to "client_credentials"),
@@ -21,7 +38,10 @@ class SpotifyAuth(
             ),
         )
 
-        return response.parsedBody<AuthResponse>().access_token
+        response.parsedBody<AuthResponse>().also {
+            token = it.access_token
+            tokenExpiresAt = clock.instant().plusSeconds(it.expires_in.toLong())
+        }
     }
 }
 

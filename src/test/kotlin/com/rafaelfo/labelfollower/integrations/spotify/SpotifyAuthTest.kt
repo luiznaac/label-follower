@@ -9,50 +9,104 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import okhttp3.Response
 import okhttp3.ResponseBody
+import java.time.Clock
+import java.time.Instant.now
 import java.util.Base64
 
 class SpotifyAuthTest : StringSpec({
 
-    val spotifyConfig = mockk<SpotifyConfig>()
+    val spotifyConfig = spotifyConfig()
     val rafaHttp = mockk<RafaHttp>()
-    val auth = SpotifyAuth(spotifyConfig, rafaHttp)
+    val clock = mockk<Clock>().also {
+        coEvery { it.instant() } returns now()
+    }
+    var auth = SpotifyAuth(spotifyConfig, rafaHttp, clock)
 
     val gson = GsonBuilder().create()
 
-    "should correctly get token" {
-        val spotifyUri = "http://this.is.an.uri/auth/"
-        val clientId = "client_id_123"
-        val clientSecret = "secret!!!"
-        coEvery { spotifyConfig.authUri } returns spotifyUri
-        coEvery { spotifyConfig.clientId } returns clientId
-        coEvery { spotifyConfig.clientSecret } returns clientSecret
+    beforeEach {
+        auth = SpotifyAuth(spotifyConfig, rafaHttp, clock)
+    }
 
+    "should correctly get token" {
         val expectedToken = "THIS_IS_MY_TOKEN"
         val response = mockk<Response>()
         val body = mockk<ResponseBody>()
         coEvery { response.body } returns body
-        coEvery { body.string() } returns gson.toJson(
-            AuthResponseForTest(
-                access_token = expectedToken,
-                token_type = "AA",
-                expires_in = "3600",
-            )
-        )
+        coEvery { body.string() } returns gson.toJson(authResponse(expectedToken))
         coEvery { rafaHttp.post(any(), any(), any()) } returns response
 
         auth.getToken() shouldBe expectedToken
         coVerify(exactly = 1) {
             rafaHttp.post(
-                url = spotifyUri,
+                url = spotifyConfig.authUri,
                 body = mapOf("grant_type" to "client_credentials"),
                 headers = mapOf(
                     "Content-Type" to "application/x-www-form-urlencoded",
-                    "Authorization" to buildAuthHeader(clientId, clientSecret),
+                    "Authorization" to buildAuthHeader(spotifyConfig.clientId, spotifyConfig.clientSecret),
+                ),
+            )
+        }
+    }
+
+    "should not get token if token is already set" {
+        val expectedToken = "THIS_IS_MY_TOKEN_2"
+        val response = mockk<Response>()
+        val body = mockk<ResponseBody>()
+        coEvery { response.body } returns body
+        coEvery { body.string() } returns gson.toJson(authResponse(expectedToken))
+        coEvery { rafaHttp.post(any(), any(), any()) } returns response
+
+        auth.getToken() shouldBe expectedToken
+        auth.getToken() shouldBe expectedToken
+
+        coVerify(exactly = 1) {
+            rafaHttp.post(
+                url = spotifyConfig.authUri,
+                body = mapOf("grant_type" to "client_credentials"),
+                headers = mapOf(
+                    "Content-Type" to "application/x-www-form-urlencoded",
+                    "Authorization" to buildAuthHeader(spotifyConfig.clientId, spotifyConfig.clientSecret),
+                ),
+            )
+        }
+    }
+
+    "should get new token if token is expired" {
+        val expectedToken1 = "THIS_IS_MY_TOKEN_1"
+        val expectedToken2 = "THIS_IS_MY_TOKEN_2"
+        val response = mockk<Response>()
+        val body = mockk<ResponseBody>()
+        coEvery { response.body } returns body
+        coEvery { body.string() } returnsMany listOf(
+            gson.toJson(authResponse(expectedToken1)),
+            gson.toJson(authResponse(expectedToken2)),
+        )
+        coEvery { rafaHttp.post(any(), any(), any()) } returns response
+
+        auth.getToken() shouldBe expectedToken1
+
+        coEvery { clock.instant() } returns now().plusSeconds(3601)
+        auth.getToken() shouldBe expectedToken2
+
+        coVerify(exactly = 2) {
+            rafaHttp.post(
+                url = spotifyConfig.authUri,
+                body = mapOf("grant_type" to "client_credentials"),
+                headers = mapOf(
+                    "Content-Type" to "application/x-www-form-urlencoded",
+                    "Authorization" to buildAuthHeader(spotifyConfig.clientId, spotifyConfig.clientSecret),
                 ),
             )
         }
     }
 })
+
+private fun authResponse(expectedToken: String) = AuthResponseForTest(
+    access_token = expectedToken,
+    token_type = "AA",
+    expires_in = "3600",
+)
 
 private data class AuthResponseForTest(
     val access_token: String,
@@ -67,3 +121,10 @@ private fun buildAuthHeader(clientId: String, clientSecret: String): String {
 
     return "Basic $param"
 }
+
+private fun spotifyConfig() = SpotifyConfig(
+    clientId = "CLIENT_ID",
+    clientSecret = "SECRET!!!",
+    authUri = "http://this.is.an.uri/auth/",
+    apiUri = "http://this.is.an.uri/api/",
+)
