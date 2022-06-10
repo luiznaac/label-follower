@@ -21,23 +21,23 @@ class SpotifyAlbumGateway(
         ).parsedBody()
     }
 
-    fun findAlbumsBy(albums: Set<SpotifyAlbum>): Set<SpotifyAlbum> {
-        return albums.chunked(MAX_ALBUMS_PER_REQUEST)
-            .flatMap { getAlbumsBy(it.toSet()) }
+    fun findAlbumsById(albumIds: Set<String>): Set<SpotifyAlbum> {
+        return albumIds.chunked(MAX_IDS_PER_REQUEST)
+            .flatMap { fetchAlbumsById(it.toSet()) }
             .toSet()
     }
 
-    private fun getAlbumsBy(albums: Set<SpotifyAlbum>): Set<SpotifyAlbum> {
+    private fun fetchAlbumsById(albumIds: Set<String>): Set<SpotifyAlbum> {
         return rafaHttp.get(
             url = spotifyConfig.apiUri,
             path = "v1/albums",
             headers = mapOf("Authorization" to "Bearer ${spotifyAuth.getToken()}"),
-            queryParameters = mapOf("ids" to albums.joinToString(separator = ",") { it.id })
+            queryParameters = mapOf("ids" to albumIds.joinToString(separator = ","))
         ).parsedBody<AlbumsResponse>().albums.toSet()
     }
 
     companion object {
-        private const val MAX_ALBUMS_PER_REQUEST = 20
+        private const val MAX_IDS_PER_REQUEST = 20
     }
 }
 

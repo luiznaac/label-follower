@@ -13,6 +13,12 @@ data class SpotifyAlbum(
 
     fun toLabel() = Label(
         name = label!!,
-        copyright = copyrights!!.first().text.split(" ", limit = 2)[1],
+        copyrights = copyrights!!
+            .map { it.text.replace(regex = REGEX_FIRST_4_NUMBERS_FOLLOWED_BY_SPACE, replacement = "") }
+            .toSet(),
     )
+
+    companion object {
+        private val REGEX_FIRST_4_NUMBERS_FOLLOWED_BY_SPACE = Regex("(^)\\d{4}\\s+")
+    }
 }

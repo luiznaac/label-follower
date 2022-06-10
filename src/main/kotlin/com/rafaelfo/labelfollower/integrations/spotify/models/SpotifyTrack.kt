@@ -3,6 +3,7 @@ package com.rafaelfo.labelfollower.integrations.spotify.models
 import com.rafaelfo.labelfollower.models.Track
 
 data class SpotifyTrack(
+    val id: String,
     val name: String,
     val artists: Set<SpotifyArtist>,
     val album: SpotifyAlbum?,
