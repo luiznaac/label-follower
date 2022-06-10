@@ -23,18 +23,14 @@ class SpotifyGateway(
     }
 
     override fun getTracksFrom(label: Label): Set<Track> {
-        println("looking for: $label")
-        val tracksFound = spotifyLabelGateway.findAlbumsBy(label)
+        return spotifyLabelGateway.findAlbumsBy(label)
             .run { this.map { it.id }.toSet() }
             .run { spotifyAlbumGateway.findAlbumsById(this) }
-            .onEach { println(it.toLabel()) }
             .filter { label.matches(it.toLabel()) }
             .flatMap { it.tracks!!.items }
             .run { this.map { it.id }.toSet() }
             .run { spotifyTrackGateway.findTracksById(this) }
             .map { it.toTrack() }
             .toSet()
-        println("found ${tracksFound.size} tracks")
-        return tracksFound
     }
 }

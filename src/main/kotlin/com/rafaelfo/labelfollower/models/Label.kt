@@ -12,11 +12,15 @@ data class Label(
         val copyrightMatch =
             copyrights.flatMap { thisCopyright ->
                 label.copyrights.map { otherCopyright ->
-                    thisCopyright.contains(otherCopyright) || otherCopyright.contains(thisCopyright)
+                    thisCopyright matches otherCopyright
                 }
             }
             .reduce { acc, b -> acc || b }
 
         return name == label.name && copyrightMatch
     }
+
 }
+
+private infix fun String.matches(other: String) =
+    contains(other, ignoreCase = true) || other.contains(this, ignoreCase = true)
