@@ -14,7 +14,7 @@ class LabelIntrospectorTest : StringSpec({
     val introspector = LabelIntrospector(externalInfoGateway)
 
     "should correctly get label from track and search for tracks" {
-        val label = Label(name = "Label 1", copyright = "Copyrigth 1")
+        val label = Label(name = "Label 1", copyrights = setOf("Copyrigth 1"))
         val track1 = Track(name = "Track 1", artists = emptySet(), isrc = "AABB123")
         val track2 = Track(name = "Track 2", artists = emptySet(), isrc = "CCDD456")
 

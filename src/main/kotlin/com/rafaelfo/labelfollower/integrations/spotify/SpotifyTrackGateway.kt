@@ -2,6 +2,7 @@ package com.rafaelfo.labelfollower.integrations.spotify
 
 import com.rafaelfo.labelfollower.integrations.httputils.RafaHttp
 import com.rafaelfo.labelfollower.integrations.httputils.parsedBody
+import com.rafaelfo.labelfollower.integrations.spotify.models.SpotifyAlbum
 import com.rafaelfo.labelfollower.integrations.spotify.models.SpotifyTrack
 import com.rafaelfo.labelfollower.integrations.spotify.responses.SearchResponse
 import org.springframework.stereotype.Component
@@ -26,4 +27,27 @@ class SpotifyTrackGateway(
 
         return response.tracks.items.first()
     }
+
+    fun findTracksById(albumIds: Set<String>): Set<SpotifyTrack> {
+        return albumIds.chunked(MAX_IDS_PER_REQUEST)
+            .flatMap { fetchTracksById(it.toSet()) }
+            .toSet()
+    }
+
+    private fun fetchTracksById(albumIds: Set<String>): Set<SpotifyTrack> {
+        return rafaHttp.get(
+            url = spotifyConfig.apiUri,
+            path = "v1/tracks",
+            headers = mapOf("Authorization" to "Bearer ${spotifyAuth.getToken()}"),
+            queryParameters = mapOf("ids" to albumIds.joinToString(separator = ","))
+        ).parsedBody<TracksResponse>().tracks.toSet()
+    }
+
+    companion object {
+        private const val MAX_IDS_PER_REQUEST = 20
+    }
 }
+
+private data class TracksResponse(
+    val tracks: List<SpotifyTrack>,
+)

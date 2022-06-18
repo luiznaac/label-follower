@@ -23,6 +23,14 @@ class SpotifyGateway(
     }
 
     override fun getTracksFrom(label: Label): Set<Track> {
-        return spotifyLabelGateway.findTracksBy(label).map { it.toTrack() }.toSet()
+        return spotifyLabelGateway.findAlbumsBy(label)
+            .run { this.map { it.id }.toSet() }
+            .run { spotifyAlbumGateway.findAlbumsById(this) }
+            .filter { label.matches(it.toLabel()) }
+            .flatMap { it.tracks!!.items }
+            .run { this.map { it.id }.toSet() }
+            .run { spotifyTrackGateway.findTracksById(this) }
+            .map { it.toTrack() }
+            .toSet()
     }
 }
