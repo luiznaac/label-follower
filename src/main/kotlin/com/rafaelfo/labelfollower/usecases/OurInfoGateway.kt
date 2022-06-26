@@ -8,4 +8,6 @@ interface OurInfoGateway {
     fun getTracksFrom(label: Label): Set<Track>
 
     fun saveTracks(tracks: Set<Track>, label: Label)
+
+    fun getLabels(): Set<Label>
 }
