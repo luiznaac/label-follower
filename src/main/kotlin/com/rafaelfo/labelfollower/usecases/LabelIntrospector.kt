@@ -18,7 +18,9 @@ class LabelIntrospector(
         val labelTracks = externalInfoGateway.getTracksFrom(label)
         val ourTracks = ourInfoGateway.getTracksFrom(label).map { it.isrc }
 
-        return labelTracks.filter { !ourTracks.contains(it.isrc) }.toSet()
+        return labelTracks.filter { !ourTracks.contains(it.isrc) }.toSet().also {
+            ourInfoGateway.saveTracks(it, label)
+        }
     }
 
     fun introspectFrom(track: Track): Set<Track> {

@@ -6,4 +6,6 @@ import com.rafaelfo.labelfollower.models.Track
 interface OurInfoGateway {
 
     fun getTracksFrom(label: Label): Set<Track>
+
+    fun saveTracks(tracks: Set<Track>, label: Label)
 }
