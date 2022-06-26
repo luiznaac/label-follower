@@ -9,6 +9,7 @@ data class SpotifyAlbum(
     val copyrights: List<SpotifyCopyrights>?,
     val tracks: TrackItems?,
     val label: String?,
+    val release_date: String,
 ) {
 
     fun toLabel() = Label(
