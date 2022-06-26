@@ -5,9 +5,8 @@ import com.google.gson.reflect.TypeToken
 import com.rafaelfo.labelfollower.models.Label
 import com.rafaelfo.labelfollower.models.Track
 import com.rafaelfo.labelfollower.usecases.OurInfoGateway
-import okhttp3.Response
-import org.springframework.stereotype.Component
 import java.io.File
+import org.springframework.stereotype.Component
 
 @Component
 class OurInfoGatewayImpl : OurInfoGateway {
@@ -49,7 +48,7 @@ class OurInfoGatewayImpl : OurInfoGateway {
     }
 
     private inline fun <reified T> getInfoFrom(fileName: String, default: T) : T {
-        val file = File(fileName)
+        val file = File(FOLDER, fileName)
 
         if (!file.exists()) {
             return default
@@ -59,10 +58,9 @@ class OurInfoGatewayImpl : OurInfoGateway {
     }
 
     private inline fun <reified T> saveInfoTo(fileName: String, info: T) {
-        GsonBuilder().setPrettyPrinting()
-        File(fileName).writeText(
-            gson.toJson(info)
-        )
+        File(FOLDER, fileName)
+            .also { it.parentFile.mkdirs() }
+            .writeText(gson.toJson(info))
     }
 
     private inline fun <reified T> File.readAsJson(): T =
@@ -71,6 +69,7 @@ class OurInfoGatewayImpl : OurInfoGateway {
     companion object {
         private val gson = GsonBuilder().setPrettyPrinting().create()
         private const val LABEL_FILENAME = "labels.txt"
+        private const val FOLDER = "tooLazyToImplementPersistenceRightNow"
     }
 }
 
