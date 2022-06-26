@@ -19,4 +19,10 @@ class IntrospectController(
         labelIntrospector.introspectFrom(
             trackFinder.findBy(isrc)
         )
+
+    @GetMapping("/newTracks/{isrc}")
+    fun findNewTracks(@PathVariable isrc: String) =
+        labelIntrospector.discoverNewTracksFrom(
+            trackFinder.findBy(isrc)
+        )
 }
