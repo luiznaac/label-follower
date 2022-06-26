@@ -9,5 +9,7 @@ interface OurInfoGateway {
 
     fun saveTracks(tracks: Set<Track>, label: Label)
 
+    fun getLabelBy(labelName: String): Label?
+
     fun getLabels(): Set<Label>
 }

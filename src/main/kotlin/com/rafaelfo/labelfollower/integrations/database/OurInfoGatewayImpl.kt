@@ -24,6 +24,11 @@ class OurInfoGatewayImpl : OurInfoGateway {
         )
     }
 
+    override fun getLabelBy(labelName: String) : Label? {
+        val labels = getLabels()
+        return labels.firstOrNull { it.name == labelName }
+    }
+
     override fun getLabels(): Set<Label> {
         return getInfoFrom(LABEL_FILENAME, emptySet())
     }
@@ -41,11 +46,6 @@ class OurInfoGatewayImpl : OurInfoGateway {
         return persistedLabel.copy(
             copyrights = persistedLabel.copyrights + label.copyrights
         )
-    }
-
-    private fun getLabelBy(labelName: String) : Label? {
-        val labels = getLabels()
-        return labels.firstOrNull { it.name == labelName }
     }
 
     private inline fun <reified T> getInfoFrom(fileName: String, default: T) : T {
