@@ -12,7 +12,6 @@ data class SpotifyTrack(
 
     fun toTrack() = Track(
         name = name,
-        artists = artists.map { it.toArtist() }.toSet(),
         isrc = external_ids!!.isrc,
     )
 }

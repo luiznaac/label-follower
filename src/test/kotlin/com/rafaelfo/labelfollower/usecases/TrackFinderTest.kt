@@ -14,7 +14,7 @@ class TrackFinderTest : StringSpec({
 
     "should correctly find track by isrc" {
         val isrc = "AABB123"
-        val track = Track(name = "Track 1", artists = emptySet(), isrc = isrc)
+        val track = Track(name = "Track 1", isrc = isrc)
         coEvery { trackGateway.findTrackBy(any()) } returns track
 
         finder.findBy(isrc) shouldBe track
