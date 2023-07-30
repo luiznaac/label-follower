@@ -13,6 +13,7 @@ data class SpotifyTrack(
     fun toTrack() = Track(
         name = name,
         isrc = external_ids!!.isrc,
+        spotifyId = id,
     )
 }
 
