@@ -2,10 +2,10 @@ package com.rafaelfo.labelfollower.integrations.spotify
 
 import com.rafaelfo.labelfollower.integrations.httputils.RafaHttp
 import com.rafaelfo.labelfollower.integrations.httputils.parsedBody
-import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Instant
 import java.util.Base64
+import org.springframework.stereotype.Component
 
 @Component
 class SpotifyAuth(
@@ -43,7 +43,7 @@ class SpotifyAuth(
         println("SpotifyAuth: Requesting new token")
         val response = rafaHttp.post(
             url = spotifyConfig.authUri,
-            body = mapOf("grant_type" to "client_credentials"),
+            formBody = mapOf("grant_type" to "client_credentials"),
             headers = mapOf(
                 "Content-Type" to "application/x-www-form-urlencoded",
                 "Authorization" to spotifyConfig.buildAuthorizationHeader(),

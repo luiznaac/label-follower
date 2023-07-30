@@ -4,6 +4,7 @@ import okhttp3.FormBody
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.springframework.stereotype.Component
 
@@ -12,22 +13,19 @@ class RafaHttp {
 
     fun post(
         url: String,
-        body: Map<String, String>,
+        formBody: Map<String, String> = emptyMap(),
+        body: Map<String, Any?> = emptyMap(),
         headers: Map<String, String>,
     ): Response {
-        val formBody = FormBody.Builder().run {
-            body.forEach {
-                add(it.key, it.value)
-            }
-            build()
-        }
-
         val request = Request.Builder().run {
             url(url)
             headers.forEach {
                 addHeader(it.key, it.value)
             }
-            post(formBody)
+            post(
+                if (body.isNotEmpty()) body.toJson().toRequestBody()
+                else formBody.toRequestBody()
+            )
             build()
         }
 
@@ -63,6 +61,14 @@ class RafaHttp {
         return request.execute()
     }
 }
+
+private fun Map<String, String>.toRequestBody() =
+    FormBody.Builder().run {
+        forEach {
+            add(it.key, it.value)
+        }
+        build()
+    }
 
 private fun Request.execute(): Response {
     println("RafaHttp: $this")

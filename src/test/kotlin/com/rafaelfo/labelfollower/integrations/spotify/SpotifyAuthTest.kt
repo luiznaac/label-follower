@@ -36,7 +36,7 @@ class SpotifyAuthTest : StringSpec({
         val body = mockk<ResponseBody>()
         coEvery { response.body } returns body
         coEvery { body.string() } returns gson.toJson(authResponse(expectedToken))
-        coEvery { rafaHttp.post(any(), any(), any()) } returns response
+        coEvery { rafaHttp.post(any(), any(), any(), any()) } returns response
 
         auth.getToken() shouldBe expectedToken
         coVerify(exactly = 1) {
@@ -57,7 +57,7 @@ class SpotifyAuthTest : StringSpec({
         val body = mockk<ResponseBody>()
         coEvery { response.body } returns body
         coEvery { body.string() } returns gson.toJson(authResponse(expectedToken))
-        coEvery { rafaHttp.post(any(), any(), any()) } returns response
+        coEvery { rafaHttp.post(any(), any(), any(), any()) } returns response
 
         auth.getToken() shouldBe expectedToken
         auth.getToken() shouldBe expectedToken
@@ -84,7 +84,7 @@ class SpotifyAuthTest : StringSpec({
             gson.toJson(authResponse(expectedToken1)),
             gson.toJson(authResponse(expectedToken2)),
         )
-        coEvery { rafaHttp.post(any(), any(), any()) } returns response
+        coEvery { rafaHttp.post(any(), any(), any(), any()) } returns response
 
         auth.getToken() shouldBe expectedToken1
 
