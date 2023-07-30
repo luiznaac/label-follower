@@ -1,5 +1,6 @@
 package com.rafaelfo.labelfollower.usecases
 
+import com.rafaelfo.labelfollower.models.Label
 import com.rafaelfo.labelfollower.models.Track
 import org.springframework.stereotype.Service
 
@@ -7,16 +8,18 @@ import org.springframework.stereotype.Service
 class Consolidator(
     private val ourInfoGateway: OurInfoGateway,
     private val labelIntrospector: LabelIntrospector,
+    private val userPlaylistGateway: UserInfoGateway,
 ) {
 
-    fun introspectAllLabelsAndNotify() {
+    fun introspectAllLabelsAndNotify(userToken: String) {
         ourInfoGateway.getLabels()
-            .associate { it.name to labelIntrospector.discoverNewTracksFrom(it) }
+            .associateWith { labelIntrospector.discoverNewTracksFrom(it) }
             .filter { it.value.isNotEmpty() }
+            .onEach { userPlaylistGateway.createPlaylistWith(it.key, it.value, userToken) }
             .also { notify(it) }
     }
 
-    private fun notify(newTracks: Map<String, Set<Track>>) {
+    private fun notify(newTracks: Map<Label, Set<Track>>) {
         newTracks.forEach {
             println(it)
         }
