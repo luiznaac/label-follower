@@ -3,12 +3,12 @@ package com.rafaelfo.labelfollower.integrations.spotify
 import com.rafaelfo.labelfollower.models.Label
 import com.rafaelfo.labelfollower.models.Track
 import com.rafaelfo.labelfollower.usecases.ExternalInfoGateway
+import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import org.springframework.stereotype.Component
 
 
 @Component

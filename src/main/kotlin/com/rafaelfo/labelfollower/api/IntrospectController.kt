@@ -4,6 +4,7 @@ import com.rafaelfo.labelfollower.usecases.LabelIntrospector
 import com.rafaelfo.labelfollower.usecases.TrackFinder
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -20,7 +21,7 @@ class IntrospectController(
             trackFinder.findBy(isrc)
         )
 
-    @GetMapping("/newTracks/{isrc}")
+    @PostMapping("/newTracks/{isrc}")
     fun findNewTracks(@PathVariable isrc: String) =
         labelIntrospector.discoverNewTracksFrom(
             trackFinder.findBy(isrc)

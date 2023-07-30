@@ -23,8 +23,8 @@ class LabelIntrospectorTest : StringSpec({
 
     "should correctly get label from track and search for tracks" {
         val label = Label(name = "Label 1", copyrights = setOf("Copyrigth 1"))
-        val track1 = Track(name = "Track 1", isrc = "AABB123")
-        val track2 = Track(name = "Track 2", isrc = "CCDD456")
+        val track1 = Track(name = "Track 1", isrc = "AABB123", spotifyId = "1")
+        val track2 = Track(name = "Track 2", isrc = "CCDD456", spotifyId = "2")
 
         coEvery { externalInfoGateway.getLabel(any()) } returns label
         coEvery { externalInfoGateway.getTracksFrom(any()) } returns setOf(track1, track2)
@@ -40,10 +40,10 @@ class LabelIntrospectorTest : StringSpec({
 
     "should correctly get new tracks from label" {
         val label = Label(name = "Label 1", copyrights = setOf("Copyrigth 1"))
-        val alreadyFoundTrack1 = Track(name = "Track 1", isrc = "AABB123")
-        val alreadyFoundTrack2 = Track(name = "Track 2", isrc = "ZZYY543")
-        val newTrack1 = Track(name = "Track 3", isrc = "CCDD456")
-        val newTrack2 = Track(name = "Track 4", isrc = "GGJJ987")
+        val alreadyFoundTrack1 = Track(name = "Track 1", isrc = "AABB123", spotifyId = "1")
+        val alreadyFoundTrack2 = Track(name = "Track 2", isrc = "ZZYY543", spotifyId = "2")
+        val newTrack1 = Track(name = "Track 3", isrc = "CCDD456", spotifyId = "3")
+        val newTrack2 = Track(name = "Track 4", isrc = "GGJJ987", spotifyId = "4")
 
         coEvery { externalInfoGateway.getTracksFrom(any()) } returns setOf(
             alreadyFoundTrack1, alreadyFoundTrack2, newTrack1, newTrack2
