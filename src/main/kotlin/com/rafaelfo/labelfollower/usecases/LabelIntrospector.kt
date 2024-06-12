@@ -29,7 +29,7 @@ class LabelIntrospector(
         )
     }
 
-    private fun Track.getLabel() : Label {
+    private fun Track.getLabel(): Label {
         val trackLabel = externalInfoGateway.getLabel(isrc)
 
         return ourInfoGateway.getLabelBy(trackLabel.name)?.run {

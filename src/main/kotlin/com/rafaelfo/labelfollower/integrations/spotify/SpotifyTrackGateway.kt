@@ -19,7 +19,7 @@ class SpotifyTrackGateway(
             path = "v1/search",
             headers = mapOf("Authorization" to "Bearer ${spotifyAuth.getToken()}"),
             queryParameters = mapOf(
-                "q" to "isrc:${isrc}",
+                "q" to "isrc:$isrc",
                 "type" to "track",
             ),
         ).parsedBody<SearchResponse>()

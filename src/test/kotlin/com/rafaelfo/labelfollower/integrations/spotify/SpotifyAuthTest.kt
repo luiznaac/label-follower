@@ -118,7 +118,7 @@ private data class AuthResponseForTest(
 
 private fun buildAuthHeader(clientId: String, clientSecret: String): String {
     val param = Base64.getEncoder().encodeToString(
-        "${clientId}:${clientSecret}".toByteArray()
+        "$clientId:$clientSecret".toByteArray()
     )
 
     return "Basic $param"

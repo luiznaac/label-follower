@@ -10,7 +10,6 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
-
 @Component
 class SpotifyGateway(
     private val spotifyTrackGateway: SpotifyTrackGateway,
@@ -50,7 +49,7 @@ private fun Instant.isAfter(releaseDate: String): Boolean {
     return releaseDate.parseUTC().isAfter(this)
 }
 
-private fun String.parseUTC() : Instant {
+private fun String.parseUTC(): Instant {
     val localDate = LocalDate.from(
         DateTimeFormatter.ISO_LOCAL_DATE.parse(this)
     )
