@@ -42,7 +42,7 @@ class SpotifyAuthTest : StringSpec({
         coVerify(exactly = 1) {
             rafaHttp.post(
                 url = spotifyConfig.authUri,
-                body = mapOf("grant_type" to "client_credentials"),
+                formBody = mapOf("grant_type" to "client_credentials"),
                 headers = mapOf(
                     "Content-Type" to "application/x-www-form-urlencoded",
                     "Authorization" to buildAuthHeader(spotifyConfig.clientId, spotifyConfig.clientSecret),
@@ -65,7 +65,7 @@ class SpotifyAuthTest : StringSpec({
         coVerify(exactly = 1) {
             rafaHttp.post(
                 url = spotifyConfig.authUri,
-                body = mapOf("grant_type" to "client_credentials"),
+                formBody = mapOf("grant_type" to "client_credentials"),
                 headers = mapOf(
                     "Content-Type" to "application/x-www-form-urlencoded",
                     "Authorization" to buildAuthHeader(spotifyConfig.clientId, spotifyConfig.clientSecret),
@@ -94,7 +94,7 @@ class SpotifyAuthTest : StringSpec({
         coVerify(exactly = 2) {
             rafaHttp.post(
                 url = spotifyConfig.authUri,
-                body = mapOf("grant_type" to "client_credentials"),
+                formBody = mapOf("grant_type" to "client_credentials"),
                 headers = mapOf(
                     "Content-Type" to "application/x-www-form-urlencoded",
                     "Authorization" to buildAuthHeader(spotifyConfig.clientId, spotifyConfig.clientSecret),

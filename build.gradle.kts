@@ -1,13 +1,15 @@
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import io.gitlab.arturbosch.detekt.Detekt
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "2.6.2"
-    id("io.spring.dependency-management") version "1.0.11.RELEASE"
-    id("io.kotest") version "0.3.9"
-    id("io.gitlab.arturbosch.detekt") version "1.22.0"
-    kotlin("jvm") version "1.9.22"
-    kotlin("plugin.spring") version "1.6.10"
+    id("org.springframework.boot") version "3.3.0"
+    id("io.spring.dependency-management") version "1.1.5"
+    id("io.kotest") version "0.4.11"
+    id("io.gitlab.arturbosch.detekt") version "1.23.6"
+    id("com.github.ben-manes.versions") version "0.51.0"
+    kotlin("jvm") version "1.9.23"
+    kotlin("plugin.spring") version "1.9.23"
 }
 
 group = "com.rafaelfo"
@@ -24,18 +26,18 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.1")
-    implementation("com.squareup.okhttp3:okhttp:4.9.3")
-    implementation("com.google.code.gson:gson:2.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.gson:gson:2.11.0")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("io.kotest:kotest-assertions-core:5.3.0")
-    testImplementation("io.kotest:kotest-framework-engine-jvm:5.3.0")
+    testImplementation("io.kotest:kotest-assertions-core:5.9.1")
+    testImplementation("io.kotest:kotest-framework-engine-jvm:5.9.1")
     testImplementation("io.kotest:kotest-extensions-spring:4.4.3")
-    testImplementation("io.kotest:kotest-runner-junit5:5.3.0")
-    testImplementation("io.mockk:mockk:1.12.4")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.2")
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.22.0")
+    testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
+    testImplementation("io.mockk:mockk:1.13.11")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
 }
 
 tasks.withType<KotlinCompile> {
@@ -62,4 +64,25 @@ tasks.withType<Detekt> {
         xml.required.set(false)
         html.required.set(true)
     }
+}
+
+tasks.withType<DependencyUpdatesTask> {
+    rejectVersionIf {
+        isNonStable(candidate.version) && !isNonStable(currentVersion)
+    }
+}
+
+tasks.named<DependencyUpdatesTask>("dependencyUpdates").configure {
+    // optional parameters
+    checkForGradleUpdate = true
+    outputFormatter = "csv"
+    outputDir = "build/dependencyUpdates"
+    reportfileName = "report"
+}
+
+fun isNonStable(version: String): Boolean {
+    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
+    val regex = "^[0-9,.v-]+(-r)?$".toRegex()
+    val isStable = stableKeyword || regex.matches(version)
+    return isStable.not()
 }
