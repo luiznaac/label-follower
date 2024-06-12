@@ -2,10 +2,10 @@ package com.rafaelfo.labelfollower.integrations.spotify
 
 import com.rafaelfo.labelfollower.integrations.httputils.RafaHttp
 import com.rafaelfo.labelfollower.integrations.httputils.parsedBody
+import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Instant
 import java.util.Base64
-import org.springframework.stereotype.Component
 
 @Component
 class SpotifyAuth(
@@ -65,7 +65,7 @@ private data class AuthResponse(
 
 private fun SpotifyConfig.buildAuthorizationHeader(): String {
     val param = Base64.getEncoder().encodeToString(
-        "${clientId}:${clientSecret}".toByteArray()
+        "$clientId:$clientSecret".toByteArray()
     )
 
     return "Basic $param"

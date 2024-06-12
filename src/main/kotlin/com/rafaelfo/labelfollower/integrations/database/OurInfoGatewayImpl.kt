@@ -5,8 +5,8 @@ import com.google.gson.reflect.TypeToken
 import com.rafaelfo.labelfollower.models.Label
 import com.rafaelfo.labelfollower.models.Track
 import com.rafaelfo.labelfollower.usecases.OurInfoGateway
-import java.io.File
 import org.springframework.stereotype.Component
+import java.io.File
 
 @Component
 class OurInfoGatewayImpl : OurInfoGateway {
@@ -23,7 +23,7 @@ class OurInfoGatewayImpl : OurInfoGateway {
         )
     }
 
-    override fun getLabelBy(labelName: String) : Label? {
+    override fun getLabelBy(labelName: String): Label? {
         val labels = getLabels()
         return labels.firstOrNull { it.name == labelName }
     }
@@ -39,7 +39,7 @@ class OurInfoGatewayImpl : OurInfoGateway {
         saveInfoTo(LABEL_FILENAME, newLabels)
     }
 
-    private fun resolveLabel(label: Label) : Label {
+    private fun resolveLabel(label: Label): Label {
         val persistedLabel = getLabelBy(label.name) ?: return label
 
         return persistedLabel.copy(
@@ -47,7 +47,7 @@ class OurInfoGatewayImpl : OurInfoGateway {
         )
     }
 
-    private inline fun <reified T> getInfoFrom(fileName: String, default: T) : T {
+    private inline fun <reified T> getInfoFrom(fileName: String, default: T): T {
         val file = File(FOLDER, fileName)
 
         if (!file.exists()) {
@@ -64,7 +64,7 @@ class OurInfoGatewayImpl : OurInfoGateway {
     }
 
     private inline fun <reified T> File.readAsJson(): T =
-        gson.fromJson(readText(), object: TypeToken<T>() {}.type)
+        gson.fromJson(readText(), object : TypeToken<T>() {}.type)
 
     companion object {
         private val gson = GsonBuilder().setPrettyPrinting().create()

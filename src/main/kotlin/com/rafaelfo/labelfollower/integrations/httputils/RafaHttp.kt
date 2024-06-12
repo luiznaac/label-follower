@@ -23,8 +23,11 @@ class RafaHttp {
                 addHeader(it.key, it.value)
             }
             post(
-                if (body.isNotEmpty()) body.toJson().toRequestBody()
-                else formBody.toRequestBody()
+                if (body.isNotEmpty()) {
+                    body.toJson().toRequestBody()
+                } else {
+                    formBody.toRequestBody()
+                }
             )
             build()
         }

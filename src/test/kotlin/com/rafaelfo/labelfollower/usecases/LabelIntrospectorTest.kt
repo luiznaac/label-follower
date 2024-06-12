@@ -46,7 +46,10 @@ class LabelIntrospectorTest : StringSpec({
         val newTrack2 = Track(name = "Track 4", isrc = "GGJJ987", spotifyId = "4")
 
         coEvery { externalInfoGateway.getTracksFrom(any()) } returns setOf(
-            alreadyFoundTrack1, alreadyFoundTrack2, newTrack1, newTrack2
+            alreadyFoundTrack1,
+            alreadyFoundTrack2,
+            newTrack1,
+            newTrack2
         )
         coEvery { ourInfoGateway.getTracksFrom(any()) } returns setOf(alreadyFoundTrack1, alreadyFoundTrack2)
         coEvery { ourInfoGateway.saveTracks(any(), any()) } just Runs

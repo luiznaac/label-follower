@@ -41,7 +41,6 @@ class SpotifyAlbumGateway(
     }
 }
 
-
 private data class AlbumsResponse(
     val albums: List<SpotifyAlbum>,
 )

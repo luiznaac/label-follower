@@ -15,11 +15,10 @@ data class Label(
                     thisCopyright matches otherCopyright
                 }
             }
-            .reduce { acc, b -> acc || b }
+                .reduce { acc, b -> acc || b }
 
         return name == label.name && copyrightMatch
     }
-
 }
 
 private infix fun String.matches(other: String) =
