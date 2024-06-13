@@ -15,18 +15,24 @@ data class SpotifyAlbum(
     fun toLabel() = Label(
         name = cleanedLabelName(),
         copyrights = copyrights!!
-            .map { it.text.replace(regex = REGEX_FIRST_4_NUMBERS_FOLLOWED_BY_SPACE, replacement = "") }
+            .map {
+                it.text
+                    .replace(regex = REGEX_ANY_NUMBER_STARTING_WITH_20, replacement = "")
+                    .replace(regex = Regex("\\s+"), replacement = " ")
+                    .lowercase()
+                    .trim()
+            }
             .toSet(),
     )
 
     private fun cleanedLabelName(): String {
         var cleanedName = label!!
         WORDS_TO_IGNORE.forEach { cleanedName = cleanedName.replace(it, "", ignoreCase = true) }
-        return cleanedName.replace(Regex("\\s+"), " ").trim()
+        return cleanedName.replace(Regex("\\s+"), " ").lowercase().trim()
     }
 
     companion object {
-        private val REGEX_FIRST_4_NUMBERS_FOLLOWED_BY_SPACE = Regex("(^)\\d{4}\\s+")
+        private val REGEX_ANY_NUMBER_STARTING_WITH_20 = Regex("20[0-9]{2}") // to match years - e.g. 2019
         private val WORDS_TO_IGNORE = setOf("records", "recordings")
     }
 }

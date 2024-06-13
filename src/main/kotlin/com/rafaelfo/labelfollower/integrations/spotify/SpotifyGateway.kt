@@ -3,6 +3,7 @@ package com.rafaelfo.labelfollower.integrations.spotify
 import com.rafaelfo.labelfollower.models.Label
 import com.rafaelfo.labelfollower.models.Track
 import com.rafaelfo.labelfollower.usecases.ExternalInfoGateway
+import com.rafaelfo.labelfollower.utils.mapToSet
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDate
@@ -15,6 +16,7 @@ class SpotifyGateway(
     private val spotifyTrackGateway: SpotifyTrackGateway,
     private val spotifyAlbumGateway: SpotifyAlbumGateway,
     private val spotifyLabelGateway: SpotifyLabelGateway,
+    private val spotifyPlaylistGateway: SpotifyPlaylistGateway,
 ) : ExternalInfoGateway {
 
     override fun getLabel(isrc: String): Label {
@@ -39,6 +41,19 @@ class SpotifyGateway(
             .map { it.toTrack() }
             .toSet()
     }
+
+    override fun getLabelFromPlaylist(playlistId: String) =
+        spotifyPlaylistGateway.getTracks(playlistId)
+            .also { println("${it.count()} tracks found in playlist") }
+            .mapToSet { it.album!!.id }
+            .also { println("${it.count()} albums found in playlist") }
+            .let { spotifyAlbumGateway.findAlbumsById(it) }
+            .mapToSet { it.toLabel() }
+            .reduce { accLabel, label ->
+                accLabel.run {
+                    copy(copyrights = accLabel.copyrights + label.copyrights)
+                }
+            }
 
     companion object {
         private val bestAfter = "2021-11-01".parseUTC()

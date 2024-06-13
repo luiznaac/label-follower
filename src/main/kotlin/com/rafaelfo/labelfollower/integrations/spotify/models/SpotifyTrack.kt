@@ -5,7 +5,7 @@ import com.rafaelfo.labelfollower.models.Track
 data class SpotifyTrack(
     val id: String,
     val name: String,
-    val artists: Set<SpotifyArtist>,
+//    val artists: Set<SpotifyArtist>,
     val album: SpotifyAlbum?,
     val external_ids: SpotifyExternalIds?,
 ) {

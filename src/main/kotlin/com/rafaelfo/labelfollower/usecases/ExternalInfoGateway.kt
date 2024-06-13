@@ -10,4 +10,6 @@ interface ExternalInfoGateway {
     fun findTrackBy(isrc: String): Track
 
     fun getTracksFrom(label: Label): Set<Track>
+
+    fun getLabelFromPlaylist(playlistId: String): Label
 }
