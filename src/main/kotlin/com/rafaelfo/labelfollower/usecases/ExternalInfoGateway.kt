@@ -11,5 +11,7 @@ interface ExternalInfoGateway {
 
     fun getTracksFrom(label: Label): Set<Track>
 
+    fun getTracksFromPlaylist(playlistId: String): Set<Track>
+
     fun getLabelFromPlaylist(playlistId: String): Label
 }

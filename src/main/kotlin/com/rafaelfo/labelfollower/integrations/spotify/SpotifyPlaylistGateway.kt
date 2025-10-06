@@ -18,12 +18,14 @@ class SpotifyPlaylistGateway(
     }
 
     private fun getPlaylistTracks(startingOffset: Int, playlistId: String): Set<SpotifyTrack> {
+        if (playlistTracksCache.contains(playlistId)) return playlistTracksCache[playlistId]!!
+
         val response = rafaHttp.get(
             url = spotifyConfig.apiUri,
             path = "v1/playlists/$playlistId/tracks",
             headers = mapOf("Authorization" to "Bearer ${spotifyAuth.getToken()}"),
             queryParameters = mapOf(
-                "fields" to "total,items(track(id,name,album(id,name,release_date)))",
+                "fields" to "total,items(track(id,name,external_ids,album(id,name,release_date)))",
                 "limit" to LIMIT.toString(),
                 "offset" to startingOffset.toString(),
             )
@@ -36,10 +38,12 @@ class SpotifyPlaylistGateway(
         }
 
         return tracks
+            .also { playlistTracksCache[playlistId] = it }
     }
 
     companion object {
         private const val LIMIT = 50
+        private val playlistTracksCache: MutableMap<String, Set<SpotifyTrack>> = mutableMapOf()
     }
 }
 

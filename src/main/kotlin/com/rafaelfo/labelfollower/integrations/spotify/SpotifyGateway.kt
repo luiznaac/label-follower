@@ -34,7 +34,8 @@ class SpotifyGateway(
             .run { this.map { it.id }.toSet() }
             .run { spotifyAlbumGateway.findAlbumsById(this) }
             .filter { label.matches(it.toLabel()) }
-            .filter { bestAfter.isAfter(it.release_date) }
+            // The precision is YEAR, so this need to be fixed
+            //  .filter { bestAfter.isAfter(it.release_date) }
             .flatMap { it.tracks!!.items }
             .run { this.map { it.id }.toSet() }
             .run { spotifyTrackGateway.findTracksById(this) }
@@ -42,11 +43,13 @@ class SpotifyGateway(
             .toSet()
     }
 
+    override fun getTracksFromPlaylist(playlistId: String) =
+        spotifyPlaylistGateway.getTracks(playlistId)
+            .mapToSet { it.toTrack() }
+
     override fun getLabelFromPlaylist(playlistId: String) =
         spotifyPlaylistGateway.getTracks(playlistId)
-            .also { println("${it.count()} tracks found in playlist") }
             .mapToSet { it.album!!.id }
-            .also { println("${it.count()} albums found in playlist") }
             .let { spotifyAlbumGateway.findAlbumsById(it) }
             .mapToSet { it.toLabel() }
             .reduce { accLabel, label ->

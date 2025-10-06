@@ -16,6 +16,7 @@ class Consolidator(
             .associateWith { labelIntrospector.discoverNewTracksFrom(it) }
             .filter { it.value.isNotEmpty() }
             .onEach { userPlaylistGateway.createPlaylistWith(it.key, it.value, userToken) }
+            .onEach { println("Found ${it.value.size} new tracks from ${it.key.name}") }
             .also { notify(it) }
     }
 
