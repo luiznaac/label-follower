@@ -1,0 +1,28 @@
+# Full stack in one command: the combined app image (Spring Boot backend + built
+# SPA, from ./Dockerfile), fronted by nginx.
+#
+#   docker compose up --build     # -> http://localhost:8081
+#
+# The backend has no database — it persists to flat files, kept in the named
+# volume below so they survive `docker compose down`.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: luiznaac/label-follower:latest
+    restart: unless-stopped
+    environment:
+      - API_PORT=8080
+      - WEB_PORT=8081
+      - SPRING_PROFILES_ACTIVE=production
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET:?set SPOTIFY_CLIENT_SECRET}
+    ports:
+      - "8080:8080" # API  (Spring Boot)
+      - "8081:8081" # web  (nginx: SPA + /api proxy)
+    volumes:
+      - label-follower-data:/app/tooLazyToImplementPersistenceRightNow
+
+volumes:
+  label-follower-data:

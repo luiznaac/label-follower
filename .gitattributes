@@ -1,0 +1,6 @@
+# Container / CI assets must keep LF endings even when checked out on Windows.
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+deploy/**       text eol=lf
+gradlew         text eol=lf
+*.bat           text eol=crlf

@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * Design tokens — Spotify-ish dark. Green accent, near-black surfaces.
+ * Dark-only (color-scheme: dark), like shougong.
+ * ------------------------------------------------------------------ */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+
+  --color-brand-400: #1ed760; /* bright green — hover / emphasis  */
+  --color-brand-500: #1db954; /* Spotify green — primary action   */
+  --color-brand-600: #1aa34a; /* pressed                          */
+
+  --color-surface-950: #0a0a0a;
+  --color-surface-900: #121212; /* app background      */
+  --color-surface-850: #181818; /* cards              */
+  --color-surface-800: #242424; /* card hover / border */
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-surface-900 text-neutral-200 font-sans antialiased;
+  }
+}
