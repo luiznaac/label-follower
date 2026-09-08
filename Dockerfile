@@ -6,8 +6,8 @@
 #   - nginx      (the built SPA + /api proxy)  -> ${WEB_PORT}, default 8081
 # supervised together by supervisord.
 #
-# The backend persists to flat files under /app/tooLazyToImplementPersistenceRightNow
-# — mount a volume there if you want it to survive restarts.
+# The backend persists to MySQL (MYSQL_HOST/MYSQL_USER/MYSQL_PASSWORD) — no local
+# volume needed for backend state.
 # ===========================================================================
 
 # ---------------------------------------------------------------------------

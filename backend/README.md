@@ -22,6 +22,7 @@ This is one half of a two-project repo — see the root [README](../README.md) a
 ### Requirements
 
 - JDK 17.
+- MySQL — `docker compose -f backend/docker-compose.yml up -d mysql` (or the root compose file for the full stack).
 - A Spotify API app — you need a `SPOTIFY_CLIENT_SECRET` environment variable set to run it (the
   client ID is already in `application.properties` and isn't secret).
 
@@ -61,7 +62,7 @@ cd backend
 - `src/main/kotlin/com/rafaelfo/labelfollower/api/` — the HTTP endpoints listed above.
 - `.../usecases/` — the actual "find new tracks / build a playlist" logic.
 - `.../integrations/spotify/` — talks to the real Spotify API.
-- `.../integrations/database/` — where label/track info we already know about is stored.
+- `.../integrations/database/` — where label/track info we already know about is stored (MySQL, via Exposed).
 - `.../models/` — the core `Label` and `Track` concepts.
 
 See [CLAUDE.md](CLAUDE.md) for architecture details and conventions if you're making changes.
