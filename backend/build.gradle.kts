@@ -56,6 +56,26 @@ tasks.named<Jar>("jar") {
     enabled = false
 }
 
+// Local dev convenience: load secrets from the repo-root .env (gitignored) into
+// `./gradlew bootRun` so they don't have to be exported by hand. In Docker the
+// real environment variables are injected by docker-compose instead. Values
+// already present in the environment are left untouched.
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    val dotenv = file("../.env")
+    if (dotenv.exists()) {
+        dotenv.readLines()
+            .map(String::trim)
+            .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains("=") }
+            .forEach { line ->
+                val (key, rawValue) = line.split("=", limit = 2)
+                val value = rawValue.trim().trim('"')
+                if (value.isNotEmpty() && System.getenv(key.trim()) == null) {
+                    environment(key.trim(), value)
+                }
+            }
+    }
+}
+
 tasks.withType<Detekt> {
     parallel = true
     disableDefaultRuleSets = true

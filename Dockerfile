@@ -33,6 +33,9 @@ FROM eclipse-temurin:17-jdk AS backend
 WORKDIR /app
 
 COPY backend/ ./
+# Strip any CRLF line endings a Windows checkout (core.autocrlf=true) may have
+# introduced, so the wrapper's shebang resolves inside the Linux build stage.
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 RUN --mount=type=cache,target=/root/.gradle \
     ./gradlew --no-daemon clean bootJar \
     && cp build/libs/*.jar app.jar
