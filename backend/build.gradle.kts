@@ -51,6 +51,11 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+// Only ship the executable Spring Boot jar — skip the extra `-plain.jar`.
+tasks.named<Jar>("jar") {
+    enabled = false
+}
+
 tasks.withType<Detekt> {
     parallel = true
     disableDefaultRuleSets = true

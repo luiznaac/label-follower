@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.gradle
+**/node_modules
+frontend/dist
+backend/build
+backend/.gradle
+*.md
+!README.md
+tooLazyToImplementPersistenceRightNow

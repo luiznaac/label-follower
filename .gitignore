@@ -19,6 +19,9 @@
 *.tar.gz
 *.rar
 
+# ...but the Gradle wrapper jar must be committed so ./gradlew works standalone (CI, Docker).
+!backend/gradle/wrapper/gradle-wrapper.jar
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
@@ -29,3 +32,8 @@ hs_err_pid*
 build
 
 *.txt
+
+# Frontend
+node_modules/
+frontend/dist/
+*.tsbuildinfo

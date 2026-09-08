@@ -1,0 +1,17 @@
+{
+  "name": "label-follower-monorepo",
+  "private": true,
+  "description": "Task-runner shims for label-follower (backend/ + frontend/). Not a real Node package.",
+  "scripts": {
+    "setup": "npm --prefix frontend install",
+    "be:run": "cd backend && ./gradlew bootRun",
+    "be:check": "cd backend && ./gradlew detekt test",
+    "be:build": "cd backend && ./gradlew bootJar",
+    "fe:dev": "npm --prefix frontend run dev",
+    "fe:build": "npm --prefix frontend run build",
+    "fe:typecheck": "npm --prefix frontend run typecheck",
+    "check": "npm run be:check && npm run fe:typecheck && npm run fe:build",
+    "up": "docker compose up --build",
+    "down": "docker compose down"
+  }
+}
