@@ -103,7 +103,6 @@ configurations.named("detekt") {
         }
     }
 }
-
 tasks.withType<Detekt> {
     parallel = true
     disableDefaultRuleSets = true
