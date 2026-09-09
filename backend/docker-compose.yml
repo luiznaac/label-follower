@@ -4,6 +4,9 @@
 #   docker compose -f backend/docker-compose.yml up -d mysql
 #
 # The full stack (this DB + the app) is the root docker-compose.yml.
+#
+# The schema is NOT created here: db/migration/V*.sql is applied by Flyway (`./gradlew migrate`
+# locally, deploy/entrypoint.sh in the container).
 
 services:
   mysql:
@@ -15,7 +18,6 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
       - label-follower-mysql-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
