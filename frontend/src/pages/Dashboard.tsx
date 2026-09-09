@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 import { StatTile } from "../components/StatTile.tsx";
-import { isSpotifyConnected } from "../lib/spotifyAuth.ts";
+import { useSpotifyStatus } from "../api/queries.ts";
 
 export function Dashboard() {
-  const connected = isSpotifyConnected();
+  const status = useSpotifyStatus();
+  const connected = status.data?.connected ?? false;
 
   return (
     <div className="space-y-8">
@@ -19,7 +20,7 @@ export function Dashboard() {
       <section className="grid gap-3 sm:grid-cols-2">
         <StatTile
           label="Conta do Spotify"
-          value={connected ? "conectada" : "desconectada"}
+          value={status.isPending ? "verificando…" : connected ? "conectada" : "desconectada"}
           tone={connected ? "brand" : "muted"}
         />
         <StatTile label="Ambiente" value={import.meta.env.DEV ? "dev" : "prod"} tone="muted" />

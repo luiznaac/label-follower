@@ -11,12 +11,16 @@ import java.time.Instant
 @Component
 class SpotifyUserPlaylistGateway(
     private val spotifyConfig: SpotifyConfig,
+    private val spotifyUserAuth: SpotifyUserAuth,
     private val rafaHttp: RafaHttp,
 ) : UserInfoGateway {
 
-    override fun createPlaylistWith(label: Label, tracks: Set<Track>, userToken: String) {
+    override fun createPlaylistWith(label: Label, tracks: Set<Track>) {
+        val userToken = spotifyUserAuth.getFreshAccessToken()
+        val spotifyUserId = spotifyUserAuth.getSpotifyUserId()
+
         val playlistId = rafaHttp.post(
-            url = "${spotifyConfig.apiUri}/v1/users/12183121385/playlists",
+            url = "${spotifyConfig.apiUri}/v1/users/$spotifyUserId/playlists",
             headers = mapOf("Authorization" to "Bearer $userToken"),
             body = mapOf(
                 "name" to "${Instant.now()}-${label.name}",

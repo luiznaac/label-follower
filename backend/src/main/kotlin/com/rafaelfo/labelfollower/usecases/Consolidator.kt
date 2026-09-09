@@ -11,11 +11,11 @@ class Consolidator(
     private val userPlaylistGateway: UserInfoGateway,
 ) {
 
-    fun introspectAllLabelsAndNotify(userToken: String) {
+    fun introspectAllLabelsAndNotify() {
         ourInfoGateway.getLabels()
             .associateWith { labelIntrospector.discoverNewTracksFrom(it) }
             .filter { it.value.isNotEmpty() }
-            .onEach { userPlaylistGateway.createPlaylistWith(it.key, it.value, userToken) }
+            .onEach { userPlaylistGateway.createPlaylistWith(it.key, it.value) }
             .also { notify(it) }
     }
 

@@ -23,11 +23,26 @@ export type LabelCatalogResponse = Track[];
 export type DiscoverNewTracksResponse = Track[];
 
 /**
- * POST /consolidate — requires header `Authorization: Bearer <spotify user token>`.
- * Returns HTTP 200 with an EMPTY body: it walks every stored label, creates Spotify
- * playlists, and only logs its progress. No per-label result is returned.
+ * POST /consolidate — no request body or auth header needed; the backend is permanently
+ * authenticated against Spotify (see AuthController / SpotifyUserAuth). Returns HTTP 200 with
+ * an EMPTY body: it walks every stored label, creates Spotify playlists, and only logs its
+ * progress. No per-label result is returned.
  */
 export type ConsolidateResponse = void;
+
+/** GET /auth/spotify/status */
+export interface SpotifyStatusResponse {
+  connected: boolean;
+}
+
+/** POST /auth/spotify/exchange */
+export interface ExchangeCodeRequest {
+  code: string;
+  redirectUri: string;
+}
+
+/** DELETE /auth/spotify */
+export type DisconnectSpotifyResponse = void;
 
 // `Label` (backend models/Label.kt) is never serialized by any endpoint, so it is
 // intentionally not mirrored here.

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { completeSpotifyLogin } from "../lib/spotifyAuth.ts";
+import { useExchangeSpotifyCode } from "../api/queries.ts";
+import { SPOTIFY_REDIRECT_URI } from "../lib/spotifyAuth.ts";
 
 export function SpotifyCallback() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const exchange = useExchangeSpotifyCode();
   const ran = useRef(false);
 
   useEffect(() => {
@@ -24,9 +26,11 @@ export function SpotifyCallback() {
       return;
     }
 
-    completeSpotifyLogin(code)
+    exchange
+      .mutateAsync({ code, redirectUri: SPOTIFY_REDIRECT_URI })
       .then(() => navigate("/consolidate", { replace: true }))
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "Falha ao conectar."));
+    // exchange is a fresh mutation object each render; only re-run this effect on navigation change.
   }, [navigate]);
 
   return (
