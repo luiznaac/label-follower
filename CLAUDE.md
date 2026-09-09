@@ -29,12 +29,18 @@ not a real package. `.pre-commit-config.yaml` lives at the root and scopes hooks
 
 ## Dev
 
-Two processes:
+Three processes (the backend needs MySQL up first):
 
 ```bash
-cd backend && SPOTIFY_CLIENT_SECRET=… ./gradlew bootRun   # API  -> http://localhost:8080
-npm --prefix frontend run dev                              # SPA  -> http://127.0.0.1:5274
+docker compose -f backend/docker-compose.yml up -d mysql   # DB   -> localhost:3306
+cd backend && SPOTIFY_CLIENT_SECRET=… ./gradlew bootRun     # API  -> http://localhost:8080
+npm --prefix frontend run dev                                # SPA  -> http://127.0.0.1:5274
 ```
+
+The backend reads `MYSQL_HOST`/`MYSQL_USER`/`MYSQL_PASSWORD`; the defaults in
+`application.properties` already match the compose command above (localhost, root, no
+password — see `backend/CLAUDE.md` §7). A root `.env` (gitignored, see `.env.example`) is
+loaded into `./gradlew bootRun` automatically, so secrets do not have to be exported by hand.
 
 The SPA always calls `/api/*`; the Vite dev server proxies that to the backend and strips the
 `/api` prefix (`frontend/vite.config.ts`). Same-origin from the browser's point of view, so the
@@ -50,7 +56,8 @@ own reads. The Spotify app needs the dev redirect URI `http://127.0.0.1:5274/cal
 One image (repo-root `Dockerfile`, multi-stage) ships backend + frontend together: `supervisord`
 runs the Spring Boot jar (`API_PORT`/8080) and `nginx` (`deploy/nginx.conf.template` — serves the
 built SPA on `WEB_PORT`/8081 and reverse-proxies `/api` → the jar). `docker-compose.yml` at the
-root wraps it for local runs (mount a volume for
-`/app/tooLazyToImplementPersistenceRightNow` — the backend's flat-file persistence).
+root wraps the full stack — the app image plus its own MySQL — for local runs (see
+`backend/mysql/init.sql` for the schema; `backend/docker-compose.yml` on its own runs just the
+DB, for a locally-run `./gradlew bootRun`).
 `.github/workflows/docker-publish.yml` pushes `luiznaac/label-follower:latest` + `:sha-<short>` on
 master pushes that touch `backend/`, `frontend/`, `Dockerfile`, or `deploy/`.

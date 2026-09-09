@@ -1,7 +1,10 @@
 import type {
   ConsolidateResponse,
+  DisconnectSpotifyResponse,
   DiscoverNewTracksResponse,
+  ExchangeCodeRequest,
   LabelCatalogResponse,
+  SpotifyStatusResponse,
   TrackLookupResponse,
 } from "./types.ts";
 
@@ -58,13 +61,28 @@ export const api = {
   },
 
   /**
-   * POST /consolidate. `spotifyUserToken` is the raw access token; the client adds
-   * the `Bearer ` prefix and the backend (ConsolidatorController) strips it.
+   * POST /consolidate. The backend is permanently authenticated against Spotify server-side —
+   * no token to pass here anymore.
    */
-  consolidate(spotifyUserToken: string): Promise<ConsolidateResponse> {
-    return request(`/consolidate`, {
+  consolidate(): Promise<ConsolidateResponse> {
+    return request(`/consolidate`, { method: "POST" });
+  },
+
+  /** GET /auth/spotify/status */
+  getSpotifyStatus(): Promise<SpotifyStatusResponse> {
+    return request(`/auth/spotify/status`);
+  },
+
+  /** POST /auth/spotify/exchange — trades the OAuth `code` for a permanent backend login. */
+  exchangeSpotifyCode(body: ExchangeCodeRequest): Promise<void> {
+    return request(`/auth/spotify/exchange`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${spotifyUserToken}` },
+      body: JSON.stringify(body),
     });
+  },
+
+  /** DELETE /auth/spotify — forgets the backend's stored Spotify login. */
+  disconnectSpotify(): Promise<DisconnectSpotifyResponse> {
+    return request(`/auth/spotify`, { method: "DELETE" });
   },
 };

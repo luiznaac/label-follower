@@ -5,5 +5,5 @@ import com.rafaelfo.labelfollower.models.Track
 
 interface UserInfoGateway {
 
-    fun createPlaylistWith(label: Label, tracks: Set<Track>, userToken: String)
+    fun createPlaylistWith(label: Label, tracks: Set<Track>)
 }

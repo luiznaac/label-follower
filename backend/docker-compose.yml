@@ -1,0 +1,27 @@
+# DB-only compose file for local dev: run just MySQL and point a locally-run
+# `./gradlew bootRun` at it.
+#
+#   docker compose -f backend/docker-compose.yml up -d mysql
+#
+# The full stack (this DB + the app) is the root docker-compose.yml.
+
+services:
+  mysql:
+    image: mysql:9.4.0
+    restart: unless-stopped
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=labelfollower
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - label-follower-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  label-follower-mysql-data:

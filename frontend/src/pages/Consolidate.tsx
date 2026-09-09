@@ -1,17 +1,10 @@
-import { useState } from "react";
 import { SpotifyConnectButton } from "../components/SpotifyConnectButton.tsx";
-import { useConsolidate } from "../api/queries.ts";
-import { disconnectSpotify, isSpotifyConnected } from "../lib/spotifyAuth.ts";
+import { useConsolidate, useDisconnectSpotify, useSpotifyStatus } from "../api/queries.ts";
 
 export function Consolidate() {
-  const [connected, setConnected] = useState(isSpotifyConnected());
+  const status = useSpotifyStatus();
+  const disconnect = useDisconnectSpotify();
   const consolidate = useConsolidate();
-
-  function disconnect() {
-    disconnectSpotify();
-    setConnected(false);
-    consolidate.reset();
-  }
 
   return (
     <div className="space-y-6">
@@ -23,13 +16,19 @@ export function Consolidate() {
         </p>
       </section>
 
-      {!connected ? (
-        <SpotifyConnectButton />
-      ) : (
+      {status.isPending && <p className="text-sm text-neutral-500">Verificando conexão…</p>}
+
+      {status.isSuccess && !status.data.connected && <SpotifyConnectButton />}
+
+      {status.isSuccess && status.data.connected && (
         <div className="space-y-5">
           <div className="flex items-center gap-3 text-sm">
             <span className="text-brand-400">● Spotify conectado</span>
-            <button onClick={disconnect} className="text-neutral-500 hover:text-neutral-300">
+            <button
+              onClick={() => disconnect.mutate()}
+              disabled={disconnect.isPending}
+              className="text-neutral-500 hover:text-neutral-300 disabled:opacity-50"
+            >
               Desconectar
             </button>
           </div>

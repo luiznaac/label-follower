@@ -32,7 +32,9 @@ Single Gradle module, `backend/src/main/kotlin/com/rafaelfo/labelfollower/`:
   layer: `OurInfoGateway` (persisted label/track info), `ExternalInfoGateway` (Spotify lookups
   for a single track), `UserInfoGateway` (playlist creation on the user's Spotify account).
 - **`integrations/`** — implementations of the usecase ports:
-  - `integrations/database/OurInfoGatewayImpl.kt` implements `OurInfoGateway`.
+  - `integrations/database/` implements `OurInfoGateway` against MySQL via Exposed
+    (`OurInfoGatewayImpl`, plus its `*Table`/`*Entity` classes — see `config/DatabaseConfig.kt`
+    for the connection and `backend/mysql/init.sql` for the schema).
   - `integrations/spotify/` implements `ExternalInfoGateway`/`UserInfoGateway` against the real
     Spotify API (`SpotifyAlbumGateway`, `SpotifyTrackGateway`, `SpotifyLabelGateway`,
     `SpotifyUserPlaylistGateway`, `SpotifyAuth`, plus `models/`/`responses/` for the Spotify JSON
@@ -108,6 +110,7 @@ tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.
 | `spotify.clientId` | Spotify app client ID (not secret, safe to commit) |
 | `spotify.clientSecret` | `${SPOTIFY_CLIENT_SECRET}` — must be set as an env var, never hardcode a real value |
 | `spotify.authUri` / `spotify.apiUri` | Spotify OAuth token endpoint and API base URL |
+| `mysql.host` / `mysql.user` / `mysql.password` | required in production; the dev file defaults to `localhost`/`root`/empty, matching `backend/docker-compose.yml up -d mysql` |
 
 ## 8. Build & maintenance
 
@@ -121,8 +124,8 @@ tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.
 
 Remote: `git@github.com:luiznaac/label-follower.git`. Commits are lowercase,
 imperative/gerund (`"Persisting tracks to txt"`, `"Fixing tests"`), merged via numbered PRs.
-`.gitignore` ignores `*.txt` — a leftover from an early version that dumped labels/tracks to text
-files; not relevant to the current gateway-based persistence.
+`.gitignore` ignores `*.txt` — a leftover from the pre-MySQL flat-file persistence
+(§7); harmless, kept for old checkouts, no longer relevant to how the app persists data.
 
 ## 10. Related repositories
 

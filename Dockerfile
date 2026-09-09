@@ -6,8 +6,8 @@
 #   - nginx      (the built SPA + /api proxy)  -> ${WEB_PORT}, default 8081
 # supervised together by supervisord.
 #
-# The backend persists to flat files under /app/tooLazyToImplementPersistenceRightNow
-# — mount a volume there if you want it to survive restarts.
+# The backend persists to MySQL (MYSQL_HOST/MYSQL_USER/MYSQL_PASSWORD) — no local
+# volume needed for backend state.
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -33,6 +33,9 @@ FROM eclipse-temurin:17-jdk AS backend
 WORKDIR /app
 
 COPY backend/ ./
+# Strip any CRLF line endings a Windows checkout (core.autocrlf=true) may have
+# introduced, so the wrapper's shebang resolves inside the Linux build stage.
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 RUN --mount=type=cache,target=/root/.gradle \
     ./gradlew --no-daemon clean bootJar \
     && cp build/libs/*.jar app.jar

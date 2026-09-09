@@ -4,13 +4,9 @@ import { beginSpotifyLogin } from "../lib/spotifyAuth.ts";
 export function SpotifyConnectButton() {
   const [pending, setPending] = useState(false);
 
-  async function connect() {
+  function connect() {
     setPending(true);
-    try {
-      await beginSpotifyLogin(); // redirects away
-    } catch {
-      setPending(false);
-    }
+    beginSpotifyLogin(); // redirects away
   }
 
   return (

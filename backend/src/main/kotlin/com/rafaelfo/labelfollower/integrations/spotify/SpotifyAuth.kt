@@ -63,7 +63,7 @@ private data class AuthResponse(
     val expires_in: String,
 )
 
-private fun SpotifyConfig.buildAuthorizationHeader(): String {
+fun SpotifyConfig.buildAuthorizationHeader(): String {
     val param = Base64.getEncoder().encodeToString(
         "$clientId:$clientSecret".toByteArray()
     )

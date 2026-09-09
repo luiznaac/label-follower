@@ -1,76 +1,102 @@
 package com.rafaelfo.labelfollower.integrations.database
 
-import com.google.gson.GsonBuilder
-import com.google.gson.reflect.TypeToken
 import com.rafaelfo.labelfollower.models.Label
 import com.rafaelfo.labelfollower.models.Track
 import com.rafaelfo.labelfollower.usecases.OurInfoGateway
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Component
-import java.io.File
+import java.time.Clock
+import java.time.LocalDateTime
 
 @Component
-class OurInfoGatewayImpl : OurInfoGateway {
+class OurInfoGatewayImpl(
+    private val clock: Clock,
+) : OurInfoGateway {
 
-    override fun getTracksFrom(label: Label): Set<Track> {
-        saveLabel(label)
-        return getInfoFrom(label.getFileName(), default = emptySet())
+    override fun getTracksFrom(label: Label): Set<Track> = transaction {
+        val labelEntity = upsertLabel(label)
+
+        val trackIds = LabelTrackTable
+            .selectAll()
+            .where { LabelTrackTable.label eq labelEntity.id }
+            .map { it[LabelTrackTable.track] }
+
+        TrackEntity.find { TrackTable.id inList trackIds }.map { it.toModel() }.toSet()
     }
 
     override fun saveTracks(tracks: Set<Track>, label: Label) {
-        saveInfoTo(
-            label.getFileName(),
-            getTracksFrom(label) + tracks
-        )
+        transaction {
+            val labelEntity = upsertLabel(label)
+
+            tracks.forEach { track -> linkTrack(labelEntity.id, upsertTrack(track).id) }
+        }
     }
 
-    override fun getLabelBy(labelName: String): Label? {
-        val labels = getLabels()
-        return labels.firstOrNull { it.name == labelName }
+    override fun getLabelBy(labelName: String): Label? = transaction {
+        LabelEntity.find { LabelTable.canonicalName eq labelName }.firstOrNull()?.toModel()
     }
 
-    override fun getLabels(): Set<Label> {
-        return getInfoFrom(LABEL_FILENAME, emptySet())
+    override fun getLabels(): Set<Label> = transaction {
+        LabelEntity.all().map { it.toModel() }.toSet()
     }
 
-    private fun saveLabel(label: Label) {
-        val newLabel = resolveLabel(label)
-        val newLabels = getLabels().filter { it.name != newLabel.name } + newLabel
+    private fun upsertLabel(label: Label): LabelEntity {
+        val entity = LabelEntity.find { LabelTable.canonicalName eq label.name }.firstOrNull()
+            ?: LabelEntity.new {
+                canonicalName = label.name
+                createdAt = LocalDateTime.now(clock)
+            }
 
-        saveInfoTo(LABEL_FILENAME, newLabels)
-    }
+        val existingCopyrights = LabelCopyrightEntity.find { LabelCopyrightTable.label eq entity.id }
+            .map { it.copyrightText }
+            .toSet()
 
-    private fun resolveLabel(label: Label): Label {
-        val persistedLabel = getLabelBy(label.name) ?: return label
-
-        return persistedLabel.copy(
-            copyrights = persistedLabel.copyrights + label.copyrights
-        )
-    }
-
-    private inline fun <reified T> getInfoFrom(fileName: String, default: T): T {
-        val file = File(FOLDER, fileName)
-
-        if (!file.exists()) {
-            return default
+        (label.copyrights - existingCopyrights).forEach { newCopyright ->
+            LabelCopyrightEntity.new {
+                this.label = entity
+                copyrightText = newCopyright
+                createdAt = LocalDateTime.now(clock)
+            }
         }
 
-        return file.readAsJson()
+        return entity
     }
 
-    private inline fun <reified T> saveInfoTo(fileName: String, info: T) {
-        File(FOLDER, fileName)
-            .also { it.parentFile.mkdirs() }
-            .writeText(gson.toJson(info))
+    private fun upsertTrack(track: Track): TrackEntity {
+        return TrackEntity.find { TrackTable.isrc eq track.isrc }.firstOrNull()
+            ?: TrackEntity.new {
+                spotifyId = track.spotifyId
+                isrc = track.isrc
+                name = track.name
+                createdAt = LocalDateTime.now(clock)
+            }
     }
 
-    private inline fun <reified T> File.readAsJson(): T =
-        gson.fromJson(readText(), object : TypeToken<T>() {}.type)
+    private fun linkTrack(labelId: EntityID<Int>, trackId: EntityID<Int>) {
+        val alreadyLinked = LabelTrackTable
+            .selectAll()
+            .where { (LabelTrackTable.label eq labelId) and (LabelTrackTable.track eq trackId) }
+            .any()
 
-    companion object {
-        private val gson = GsonBuilder().setPrettyPrinting().create()
-        private const val LABEL_FILENAME = "labels.txt"
-        private const val FOLDER = "tooLazyToImplementPersistenceRightNow"
+        if (!alreadyLinked) {
+            LabelTrackTable.insert {
+                it[label] = labelId
+                it[track] = trackId
+                it[createdAt] = LocalDateTime.now(clock)
+            }
+        }
+    }
+
+    private fun LabelEntity.toModel(): Label {
+        val copyrights = LabelCopyrightEntity.find { LabelCopyrightTable.label eq id }
+            .map { it.copyrightText }
+            .toSet()
+        return Label(name = canonicalName, copyrights = copyrights)
     }
 }
-
-private fun Label.getFileName() = "${name.lowercase().replace(" ", "")}.txt"
