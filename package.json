@@ -7,6 +7,8 @@
     "be:run": "cd backend && ./gradlew bootRun",
     "be:check": "cd backend && ./gradlew detekt test",
     "be:build": "cd backend && ./gradlew bootJar",
+    "db:migrate": "cd backend && ./gradlew migrate",
+    "db:generate": "cd backend && ./gradlew generateMigrationScript",
     "fe:dev": "npm --prefix frontend run dev",
     "fe:build": "npm --prefix frontend run build",
     "fe:typecheck": "npm --prefix frontend run typecheck",
