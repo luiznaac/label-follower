@@ -22,6 +22,9 @@ object LabelCopyrightTable : IntIdTable("label_copyright") {
     val label = reference("label_id", LabelTable)
     val copyrightText = varchar("copyright_text", 255)
     val createdAt = datetime("created_at")
+
+    // A label accumulates copyright strings over time; the same text must not be recorded twice.
+    init { uniqueIndex(label, copyrightText) }
 }
 
 class LabelCopyrightEntity(id: EntityID<Int>) : IntEntity(id) {

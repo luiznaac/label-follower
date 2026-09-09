@@ -34,7 +34,7 @@ Single Gradle module, `backend/src/main/kotlin/com/rafaelfo/labelfollower/`:
 - **`integrations/`** — implementations of the usecase ports:
   - `integrations/database/` implements `OurInfoGateway` against MySQL via Exposed
     (`OurInfoGatewayImpl`, plus its `*Table`/`*Entity` classes — see `config/DatabaseConfig.kt`
-    for the connection and `backend/mysql/init.sql` for the schema).
+    for the connection and §7 for how the schema itself is managed).
   - `integrations/spotify/` implements `ExternalInfoGateway`/`UserInfoGateway` against the real
     Spotify API (`SpotifyAlbumGateway`, `SpotifyTrackGateway`, `SpotifyLabelGateway`,
     `SpotifyUserPlaylistGateway`, `SpotifyAuth`, plus `models/`/`responses/` for the Spotify JSON
@@ -101,7 +101,35 @@ tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.
 ./gradlew test
 ```
 
-## 7. Configuration
+## 7. Database migrations
+
+The schema is versioned SQL under `src/main/resources/db/migration/V*.sql` — there is no more
+`mysql/init.sql`. Two tools, each doing one half of the job:
+
+- **Exposed's migration module** (`config/migration/MigrationScripts.kt`) *generates* the SQL by
+  diffing `integrations/database/AllTables.kt` (every `Table` object) against a live database.
+  It never applies anything.
+- **Flyway** (`config/migration/Migrator.kt`) *applies* those `V*.sql` files. It runs as a
+  standalone `main()`, invoked from `deploy/entrypoint.sh` before the app starts — not from the
+  Spring context — so a failed migration aborts the container instead of serving traffic against
+  a stale schema. `baselineOnMigrate` means a database that already has the tables (e.g. a local
+  volume from before migrations existed) gets stamped at V1 rather than re-running it.
+
+Changing a table:
+
+1. Edit the `Table` object in `integrations/database/` (and add it to `AllTables.kt` if it's new).
+2. Point `MYSQL_HOST`/`MYSQL_USER`/`MYSQL_PASSWORD` at a database already migrated to head, then
+   `./gradlew generateMigrationScript -Pname=V2__add_something` (or `npm run db:generate --
+   -Pname=V2__add_something` from the repo root). Review the generated `.sql` before committing —
+   the diff is mechanical and won't know a rename is a rename rather than a drop-and-add.
+3. `./gradlew migrate` (or `npm run db:migrate`) to apply it locally.
+
+`config/migration/MigrationSchemaTest.kt` is the guard: it migrates a throwaway Testcontainers
+MySQL to head and asserts `MigrationUtils.statementsRequiredForDatabaseMigration(*allTables)` is
+empty. If a `Table` changes without a matching migration (or vice versa), this test fails. It's
+the only test in the repo that needs a Docker daemon.
+
+## 8. Configuration
 
 `src/main/resources/application.properties` (plus a `-production` variant):
 
@@ -112,7 +140,7 @@ tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.
 | `spotify.authUri` / `spotify.apiUri` | Spotify OAuth token endpoint and API base URL |
 | `mysql.host` / `mysql.user` / `mysql.password` | required in production; the dev file defaults to `localhost`/`root`/empty, matching `backend/docker-compose.yml up -d mysql` |
 
-## 8. Build & maintenance
+## 9. Build & maintenance
 
 ```bash
 ./gradlew build
@@ -120,14 +148,17 @@ tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.
 ./gradlew dependencyUpdates   # CSV report in build/dependencyUpdates/report — check before bumping deps by hand
 ```
 
-## 9. Git
+## 10. Git
 
 Remote: `git@github.com:luiznaac/label-follower.git`. Commits are lowercase,
 imperative/gerund (`"Persisting tracks to txt"`, `"Fixing tests"`), merged via numbered PRs.
 `.gitignore` ignores `*.txt` — a leftover from the pre-MySQL flat-file persistence
-(§7); harmless, kept for old checkouts, no longer relevant to how the app persists data.
+(§8); harmless, kept for old checkouts, no longer relevant to how the app persists data.
 
-## 10. Related repositories
+**AI agents: never commit directly to `master`.** Always create a feature branch and open a PR,
+even for a small or "obviously safe" change — no exceptions for agent-authored commits.
+
+## 11. Related repositories
 
 Same author/family as [chameidor](../../chameidor/CLAUDE.md) and
 [portfolio-2](../../portfolio-2/CLAUDE.md), but architecturally the odd one out — it predates their

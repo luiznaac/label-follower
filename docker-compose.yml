@@ -15,7 +15,6 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./backend/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
       - label-follower-mysql-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
