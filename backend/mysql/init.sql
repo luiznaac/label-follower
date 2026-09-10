@@ -49,7 +49,7 @@ CREATE TABLE label_track (
 );
 
 -- The Spotify account this app is permanently authenticated as (Authorization Code,
--- confidential client — backend/CLAUDE.md §7, integrations/spotify/SpotifyUserAuth.kt).
+-- confidential client — backend/DEVELOPMENT.md "Configuration", integrations/spotify/SpotifyUserAuth.kt).
 -- In practice a single row.
 CREATE TABLE spotify_account (
     id INT PRIMARY KEY AUTO_INCREMENT,
