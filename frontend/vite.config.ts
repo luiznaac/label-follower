@@ -8,8 +8,8 @@ export default defineConfig(({ mode }) => ({
   base: process.env.VITE_BASE ?? (mode === "production" ? "/label-follower/" : "/"),
   plugins: [react(), tailwindcss()],
   server: {
-    // 127.0.0.1 (not "localhost") so the origin matches the Spotify PKCE
-    // loopback redirect URI exactly — Spotify rejects http://localhost.
+    // 127.0.0.1 (not "localhost") so the origin matches the Spotify loopback
+    // redirect URI exactly — Spotify rejects http://localhost.
     host: "127.0.0.1",
     port: 5274, // shougong uses 5273; keep them distinct so both can run
     strictPort: true,

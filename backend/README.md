@@ -14,8 +14,9 @@ This is one half of a two-project repo — see the root [README](../README.md) a
 2. **"Introspect" a label** — look at everything that label has released.
 3. **Find what's new** — compare the label's releases against what's already known/stored, and
    surface only the tracks that are genuinely new.
-4. **Consolidate across all followed labels at once** and build a Spotify playlist containing all
-   the newly discovered tracks, using the requesting user's Spotify account.
+4. **Consolidate across all followed labels at once** — for every label with new tracks, create a
+   Spotify playlist with them on the Spotify account connected to the backend (one playlist per
+   label per run).
 
 ## Using it
 
@@ -41,12 +42,21 @@ Serves on `http://localhost:8080`.
 - `GET /track/{isrc}` — look up a track by its ISRC.
 - `GET /introspect/fromTrack/{isrc}` — find which label released a given track (its recent catalog).
 - `POST /introspect/newTracks/{isrc}` — find new tracks from the label that released a given track.
-- `POST /consolidate` (requires a Spotify `Authorization: Bearer <token>` header) — go through
-  every followed label, find new tracks for each, and create a playlist with all of them on the
-  authenticated user's Spotify account.
+- `POST /consolidate` — go through every followed label, find new tracks for each, and create one
+  playlist per label with new tracks on the connected Spotify account. Needs an account connected
+  first (see below); takes no token or body.
+- `GET /auth/spotify/status` — `{ "connected": boolean }`: whether the backend holds a Spotify login.
+- `POST /auth/spotify/exchange` — `{ "code", "redirectUri" }`: trades the OAuth authorization code
+  (from the frontend's `/callback`) for a refresh token the backend stores in MySQL.
+- `DELETE /auth/spotify` — forgets the stored Spotify login.
 
-The `Bearer` token for `/consolidate` is a **Spotify user access token**; the frontend obtains it
-via Authorization Code + PKCE (the backend itself only does client-credentials, for its own reads).
+Spotify auth is two-fold, both held by the backend: client credentials (`SpotifyAuth`) for catalogue
+reads, and a single user login (`SpotifyUserAuth`, refresh token in the `spotify_account` table) for
+creating playlists. The frontend only redirects the browser to Spotify's consent screen.
+
+Full API reference, flows and business rules (in Portuguese): [docs/tecnico.md](../docs/tecnico.md),
+[docs/negocio.md](../docs/negocio.md). Known bugs and the improvement plan:
+[docs/bugs-e-melhorias.md](../docs/bugs-e-melhorias.md).
 
 ### Build & test
 

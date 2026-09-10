@@ -34,6 +34,11 @@ register `http://127.0.0.1:5274/callback` as a redirect URI in the Spotify app.
 See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for
 details, and [DEVELOPMENT.md](DEVELOPMENT.md) for architecture and conventions.
 
+Business and technical documentation (in Portuguese) lives in [`docs/`](docs/):
+[negocio.md](docs/negocio.md) (flows and business rules), [tecnico.md](docs/tecnico.md) (API,
+sequence diagrams, data model, deploy) and [bugs-e-melhorias.md](docs/bugs-e-melhorias.md) (known
+bugs and the improvement plan).
+
 ## Docker
 
 ```bash
