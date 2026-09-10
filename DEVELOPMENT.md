@@ -47,9 +47,9 @@ npm --prefix frontend run dev                                # SPA  -> http://12
 
 The backend reads `MYSQL_HOST`/`MYSQL_USER`/`MYSQL_PASSWORD`; the defaults in
 `application.properties` already match the compose command above (localhost, root, no
-password — see [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md) §8). A root `.env` (gitignored,
-see `.env.example`) is loaded into `./gradlew bootRun` automatically, so secrets do not have to
-be exported by hand.
+password — see the "Configuration" section of [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md)). A
+root `.env` (gitignored, see `.env.example`) is loaded into `./gradlew bootRun` automatically, so
+secrets do not have to be exported by hand.
 
 The SPA always calls `/api/*`; the Vite dev server proxies that to the backend and strips the
 `/api` prefix (`frontend/vite.config.ts`). Same-origin from the browser's point of view, so the
@@ -68,7 +68,8 @@ built SPA on `WEB_PORT`/8081 and reverse-proxies `/api` → the jar). `docker-co
 root wraps the full stack — the app image plus its own MySQL — for local runs
 (`backend/docker-compose.yml` on its own runs just the DB, for a locally-run `./gradlew bootRun`).
 The schema comes from `backend/src/main/resources/db/migration/V*.sql`, applied by Flyway from
-`deploy/entrypoint.sh` before the app starts — see [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md)
-§7. `.github/workflows/docker-publish.yml` pushes `luiznaac/label-follower:latest` +
+`deploy/entrypoint.sh` before the app starts — see the "Database migrations" section of
+[backend/DEVELOPMENT.md](backend/DEVELOPMENT.md).
+`.github/workflows/docker-publish.yml` pushes `luiznaac/label-follower:latest` +
 `:v<run-number>` (a sequential build number, `github.run_number`) on master pushes that touch
 `backend/`, `frontend/`, `Dockerfile`, or `deploy/`.

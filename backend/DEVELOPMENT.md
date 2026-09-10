@@ -34,7 +34,7 @@ Single Gradle module, `backend/src/main/kotlin/com/rafaelfo/labelfollower/`:
 - **`integrations/`** — implementations of the usecase ports:
   - `integrations/database/` implements `OurInfoGateway` against MySQL via Exposed
     (`OurInfoGatewayImpl`, plus its `*Table`/`*Entity` classes — see `config/DatabaseConfig.kt`
-    for the connection and §7 for how the schema itself is managed).
+    for the connection and the "Database migrations" section for how the schema itself is managed).
   - `integrations/spotify/` implements `ExternalInfoGateway`/`UserInfoGateway` against the real
     Spotify API (`SpotifyAlbumGateway`, `SpotifyTrackGateway`, `SpotifyLabelGateway`,
     `SpotifyUserPlaylistGateway`, `SpotifyAuth`, plus `models/`/`responses/` for the Spotify JSON
@@ -77,7 +77,7 @@ Example: adding a new way to discover tracks.
    an existing one.
 4. Expose it via a thin `@RestController` method in `api/`, following the existing controllers'
    style (constructor-injected usecase, minimal logic in the method body).
-5. Add unit tests for the usecase logic (see §6) — don't skip this even though the project is
+5. Add unit tests for the usecase logic (see "Testing") — don't skip this even though the project is
    small; it's the primary safety net here since there's no separate integration-test module.
 
 ## Code style
@@ -153,7 +153,8 @@ the only test in the repo that needs a Docker daemon.
 Remote: `git@github.com:luiznaac/label-follower.git`. Commits are lowercase,
 imperative/gerund (`"Persisting tracks to txt"`, `"Fixing tests"`), merged via numbered PRs.
 `.gitignore` ignores `*.txt` — a leftover from the pre-MySQL flat-file persistence
-(§8); harmless, kept for old checkouts, no longer relevant to how the app persists data.
+(see "Configuration"); harmless, kept for old checkouts, no longer relevant to how the app
+persists data.
 
 **Do not commit directly to `master`.** Always create a feature branch and open a PR,
 even for a small or "obviously safe" change — no exceptions.
