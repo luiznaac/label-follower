@@ -47,7 +47,7 @@ Para buildar na raiz (`/`) em vez de `/label-follower/`: `VITE_BASE=/ npm run bu
 | `/`            | Painel: status da conexão com o Spotify e atalhos para as outras telas   |
 | `/introspect`  | Busca uma faixa por ISRC, mostra o catálogo recente do selo e descobre faixas novas |
 | `/consolidate` | Conecta o Spotify e dispara `POST /consolidate` para todas as gravadoras |
-| `/callback`    | Alvo do redirect OAuth do Spotify — troca o `code` e volta para `/consolidate` |
+| `/callback`    | Alvo do redirect OAuth do Spotify — envia o `code` ao backend e volta para `/consolidate` |
 
 ## Notas de arquitetura
 
@@ -55,14 +55,17 @@ Para buildar na raiz (`/`) em vez de `/label-follower/`: `VITE_BASE=/ npm run bu
   (`queries.ts`). Os tipos em `types.ts` **espelham** `models/Track.kt` e as
   respostas dos controllers do backend; qualquer mudança nos dois lados vai no
   mesmo commit (não há codegen).
-- `src/lib/spotifyAuth.ts` — o token de usuário do Spotify para `POST /consolidate`
-  é obtido **inteiramente no navegador** via Authorization Code + PKCE
-  (`accounts.spotify.com`, com CORS liberado para clientes PKCE públicos). O
-  backend continua usando só client-credentials para as leituras dele. O token
-  (access + refresh) fica em `localStorage`.
+- `src/lib/spotifyAuth.ts` — só monta a URL de consentimento do Spotify
+  (Authorization Code, sem PKCE). O `code` que volta em `/callback` é enviado a
+  `POST /auth/spotify/exchange`, e o **backend** guarda o refresh token e mantém
+  a conexão. Nenhum token fica no navegador.
 - `src/lib/isrc.ts` — normaliza (maiúsculas, sem hífens) e valida ISRC; as queries
   só disparam com um ISRC válido.
 - `POST /consolidate` responde `200` sem corpo — a tela só mostra
-  iniciado / concluído / erro. A criação de playlist usa um usuário do Spotify
-  fixo no backend (`SpotifyUserPlaylistGateway`), então na prática só essa conta
-  consegue consolidar.
+  iniciado / concluído / erro. As playlists são criadas na conta do Spotify
+  conectada no backend (uma conta só, a mesma para quem abrir o app).
+- `VITE_API_TARGET` só é lido do ambiente do shell (o `vite.config.ts` usa
+  `process.env`, que não recebe o `.env.development`).
+
+Documentação completa (fluxos, regras de negócio, API, bugs conhecidos) em
+[`docs/`](../docs/).

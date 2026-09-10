@@ -55,10 +55,20 @@ The SPA always calls `/api/*`; the Vite dev server proxies that to the backend a
 `/api` prefix (`frontend/vite.config.ts`). Same-origin from the browser's point of view, so the
 backend needs no CORS config — keep it that way.
 
-Spotify user auth for `POST /consolidate` happens entirely in the browser (Authorization Code +
-PKCE, `frontend/src/lib/spotifyAuth.ts`). The backend still only does client-credentials for its
-own reads. The Spotify app needs the dev redirect URI `http://127.0.0.1:5274/callback` registered
-(Spotify rejects `http://localhost`).
+Spotify user auth for `POST /consolidate` is held by the backend: the SPA only redirects to
+Spotify's consent screen (`frontend/src/lib/spotifyAuth.ts`), the `/callback` page posts the
+authorization code to `POST /auth/spotify/exchange`, and the backend (`SpotifyUserAuth`) stores the
+refresh token in MySQL. No token lives in the browser. Catalogue reads use the app's own
+client-credentials token (`SpotifyAuth`). The Spotify app needs the dev redirect URI
+`http://127.0.0.1:5274/callback` registered (Spotify rejects `http://localhost`).
+
+## Documentation
+
+`docs/` (in Portuguese) holds the business view ([docs/negocio.md](docs/negocio.md) — flows and
+business rules RN-xx), the technical reference ([docs/tecnico.md](docs/tecnico.md) — API, sequence
+diagrams, data model, config, deploy) and the known bugs / improvement plan
+([docs/bugs-e-melhorias.md](docs/bugs-e-melhorias.md)). Keep them in step with behaviour changes:
+a change to a business rule or an endpoint updates the matching section in the same PR.
 
 ## Docker
 

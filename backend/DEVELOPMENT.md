@@ -26,7 +26,9 @@ not a bug to fix.**
 Single Gradle module, `backend/src/main/kotlin/com/rafaelfo/labelfollower/`:
 
 - **`api/`** — `@RestController`s (Spring MVC, not Ktor). Thin: each endpoint delegates directly
-  to a usecase class. `ConsolidatorController`, `IntrospectController`, `TrackController`.
+  to a usecase class. `ConsolidatorController`, `IntrospectController`, `TrackController`, plus
+  `AuthController` (Spotify login status/exchange/disconnect), which talks straight to
+  `integrations/spotify/SpotifyUserAuth`.
 - **`usecases/`** — business logic as `@Service`/plain classes (`Consolidator`,
   `LabelIntrospector`, `TrackFinder`), plus **port interfaces** implemented by the integrations
   layer: `OurInfoGateway` (persisted label/track info), `ExternalInfoGateway` (Spotify lookups
@@ -60,9 +62,12 @@ per layer. `OurInfoGateway`/`ExternalInfoGateway`/`UserInfoGateway` live in `use
   (third-party data). The Spotify-specific naming only appears once you're inside
   `integrations/spotify/`. Keep new integrations following this "generic port, vendor-specific
   implementation" split — don't have a usecase depend on a `Spotify*` type directly.
-- **Bearer tokens are handled at the controller boundary.** `ConsolidatorController` strips the
-  `Bearer ` prefix before passing the token down — follow this pattern for any new endpoint that
-  needs the user's Spotify token, rather than parsing it deeper in the call stack.
+- **Spotify tokens never cross the HTTP API.** Both logins are held server-side:
+  `SpotifyAuth` (client credentials, catalogue reads) and `SpotifyUserAuth` (the single connected
+  user account — refresh token in `spotify_account`, access token cached in memory). Gateways that
+  act on the user's account ask `SpotifyUserAuth.getFreshAccessToken()` for a token; controllers
+  don't read or forward `Authorization` headers. `AuthController` is the only entry point that
+  touches the user login (status / exchange / disconnect).
 
 ## How to implement a new feature (walkthrough)
 
@@ -139,6 +144,7 @@ the only test in the repo that needs a Docker daemon.
 | `spotify.clientSecret` | `${SPOTIFY_CLIENT_SECRET}` — must be set as an env var, never hardcode a real value |
 | `spotify.authUri` / `spotify.apiUri` | Spotify OAuth token endpoint and API base URL |
 | `mysql.host` / `mysql.user` / `mysql.password` | required in production; the dev file defaults to `localhost`/`root`/empty, matching `backend/docker-compose.yml up -d mysql` |
+| `mysql.port` | optional, defaults to `3306` (set `MYSQL_PORT` to point at a DB published on another port) |
 
 ## Build & maintenance
 
