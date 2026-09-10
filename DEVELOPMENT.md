@@ -1,16 +1,18 @@
-# CLAUDE.md — label-follower monorepo
+# DEVELOPMENT.md — label-follower monorepo
 
-Two projects, one repo (layout borrowed from [shougong](../shougong/CLAUDE.md)):
+Development guidelines for anyone (human, agent, or tool) working in this repository.
+
+Two projects, one repo (layout borrowed from [shougong](../shougong/DEVELOPMENT.md)):
 
 - **`backend/`** — the Kotlin / Spring Boot service (plain Spring MVC, single Gradle module). All
-  backend commands run from `backend/` (`cd backend && ./gradlew <task>`). Its architecture,
-  conventions and the rules for evolving it are in [backend/CLAUDE.md](backend/CLAUDE.md) — read
-  that before touching `backend/`. It is deliberately *not* the multi-module Ktor shape of the
-  other repos in this family; don't "upgrade" it.
+  backend commands run from `backend/` (`cd backend && ./gradlew <task>`). Architecture,
+  conventions and rules for evolving it are in [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md) —
+  read that before touching `backend/`. It is deliberately *not* the multi-module Ktor shape of
+  the other repos in this family; don't "upgrade" it.
 - **`frontend/`** — the React / Vite SPA. Commands run from `frontend/`
   (`npm --prefix frontend run <script>`). Details in [frontend/README.md](frontend/README.md).
 
-## The one cross-cutting rule
+## Cross-cutting rule
 
 `frontend/src/api/types.ts` is a hand-maintained mirror of the backend DTOs — today just
 `backend/src/main/kotlin/com/rafaelfo/labelfollower/models/Track.kt` and the JSON shapes the
@@ -19,8 +21,8 @@ update the other in the same commit. There is no codegen.
 
 ## Git workflow
 
-**AI agents: never commit directly to `master`.** Always create a feature branch and open a PR,
-even for a small or "obviously safe" change.
+**Do not commit directly to `master`.** Always create a feature branch and open a PR,
+even for a small or "obviously safe" change. This applies to all contributors.
 
 ## Tooling
 
@@ -45,8 +47,9 @@ npm --prefix frontend run dev                                # SPA  -> http://12
 
 The backend reads `MYSQL_HOST`/`MYSQL_USER`/`MYSQL_PASSWORD`; the defaults in
 `application.properties` already match the compose command above (localhost, root, no
-password — see `backend/CLAUDE.md` §8). A root `.env` (gitignored, see `.env.example`) is
-loaded into `./gradlew bootRun` automatically, so secrets do not have to be exported by hand.
+password — see [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md) §8). A root `.env` (gitignored,
+see `.env.example`) is loaded into `./gradlew bootRun` automatically, so secrets do not have to
+be exported by hand.
 
 The SPA always calls `/api/*`; the Vite dev server proxies that to the backend and strips the
 `/api` prefix (`frontend/vite.config.ts`). Same-origin from the browser's point of view, so the
@@ -65,7 +68,7 @@ built SPA on `WEB_PORT`/8081 and reverse-proxies `/api` → the jar). `docker-co
 root wraps the full stack — the app image plus its own MySQL — for local runs
 (`backend/docker-compose.yml` on its own runs just the DB, for a locally-run `./gradlew bootRun`).
 The schema comes from `backend/src/main/resources/db/migration/V*.sql`, applied by Flyway from
-`deploy/entrypoint.sh` before the app starts — see [backend/CLAUDE.md](backend/CLAUDE.md) §7.
-`.github/workflows/docker-publish.yml` pushes `luiznaac/label-follower:latest` +
+`deploy/entrypoint.sh` before the app starts — see [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md)
+§7. `.github/workflows/docker-publish.yml` pushes `luiznaac/label-follower:latest` +
 `:v<run-number>` (a sequential build number, `github.run_number`) on master pushes that touch
 `backend/`, `frontend/`, `Dockerfile`, or `deploy/`.

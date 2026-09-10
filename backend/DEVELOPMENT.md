@@ -1,27 +1,27 @@
-# CLAUDE.md — label-follower (backend)
+# DEVELOPMENT.md — label-follower (backend)
 
-Implementation guidelines for AI agents working in `backend/` (the Kotlin/Spring service).
-The repo is a two-project monorepo — see the root [CLAUDE.md](../CLAUDE.md) for the layout and the
-one cross-cutting rule, and [frontend/README.md](../frontend/README.md) for the SPA. Run backend
-commands from this directory (`cd backend && ./gradlew <task>`).
+Development guidelines for anyone (human, agent, or tool) working in `backend/` (the Kotlin/Spring
+service). The repo is a two-project monorepo — see the root [DEVELOPMENT.md](../DEVELOPMENT.md)
+for the layout and the one cross-cutting rule, and [frontend/README.md](../frontend/README.md)
+for the SPA. Run backend commands from this directory (`cd backend && ./gradlew <task>`).
 
-## 1. What this service does
+## What this service does
 
 label-follower discovers new tracks from record labels the user follows on Spotify and builds a
 playlist out of them. Given a track (identified by ISRC), it can find which label released it,
 "introspect" that label to see what other tracks it has released, and diff those against tracks
 already known/stored to find genuinely new releases — then create a Spotify playlist with them.
 
-## 2. Architecture
+## Architecture
 
 **This is the oldest project in the `luiznaac` personal family and predates the
 `application/gateway/http-api/usecase/persistence` multi-module split used by
-[chameidor](../../chameidor/CLAUDE.md) and [portfolio-2](../../portfolio-2/CLAUDE.md). The repo was
-given a `backend/` + `frontend/` split to add a web UI (mirroring
-[shougong](../../shougong/CLAUDE.md)), but `backend/` itself is still a single Gradle module using
-plain Spring MVC, not Ktor. Do not restructure it into the multi-module Ktor shape unless explicitly
-asked — that flat single-module layout is an intentional (if dated) characteristic, not a bug to
-fix.**
+[chameidor](../../chameidor/DEVELOPMENT.md) and [portfolio-2](../../portfolio-2/DEVELOPMENT.md).
+The repo was given a `backend/` + `frontend/` split to add a web UI (mirroring
+[shougong](../../shougong/DEVELOPMENT.md)), but `backend/` itself is still a single Gradle module
+using plain Spring MVC, not Ktor. Do not restructure it into the multi-module Ktor shape unless
+explicitly asked — that flat single-module layout is an intentional (if dated) characteristic,
+not a bug to fix.**
 
 Single Gradle module, `backend/src/main/kotlin/com/rafaelfo/labelfollower/`:
 
@@ -50,7 +50,7 @@ integration layer" idea as the other repos in this family — just without a sep
 per layer. `OurInfoGateway`/`ExternalInfoGateway`/`UserInfoGateway` live in `usecases/`;
 `OurInfoGatewayImpl` and the Spotify gateways live in `integrations/`.
 
-## 3. Design principles
+## Design principles
 
 - **Controllers stay thin.** They extract request data (path variables, the `Authorization`
   header) and call straight into a usecase method — see `ConsolidatorController`,
@@ -64,7 +64,7 @@ per layer. `OurInfoGateway`/`ExternalInfoGateway`/`UserInfoGateway` live in `use
   `Bearer ` prefix before passing the token down — follow this pattern for any new endpoint that
   needs the user's Spotify token, rather than parsing it deeper in the call stack.
 
-## 4. How to implement a new feature (walkthrough)
+## How to implement a new feature (walkthrough)
 
 Example: adding a new way to discover tracks.
 
@@ -80,7 +80,7 @@ Example: adding a new way to discover tracks.
 5. Add unit tests for the usecase logic (see §6) — don't skip this even though the project is
    small; it's the primary safety net here since there's no separate integration-test module.
 
-## 5. Code style
+## Code style
 
 Detekt 1.23.6 + `detekt-formatting`, split `config/detekt/config.yml` + `format.yml` — but this is
 an **older iteration** of the shared template: `ForbiddenComment` still uses
@@ -90,7 +90,7 @@ asked** — it's a known, harmless divergence, not a defect.
 
 Run `./gradlew detekt` before finishing a change.
 
-## 6. Testing
+## Testing
 
 Kotest (`kotest-runner-junit5`, `kotest-extensions-spring`), MockK. Tests live in
 `src/test/kotlin/com/rafaelfo/labelfollower/...`, mirroring the main package layout. Existing
@@ -101,7 +101,7 @@ tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.
 ./gradlew test
 ```
 
-## 7. Database migrations
+## Database migrations
 
 The schema is versioned SQL under `src/main/resources/db/migration/V*.sql` — there is no more
 `mysql/init.sql`. Two tools, each doing one half of the job:
@@ -129,7 +129,7 @@ MySQL to head and asserts `MigrationUtils.statementsRequiredForDatabaseMigration
 empty. If a `Table` changes without a matching migration (or vice versa), this test fails. It's
 the only test in the repo that needs a Docker daemon.
 
-## 8. Configuration
+## Configuration
 
 `src/main/resources/application.properties` (plus a `-production` variant):
 
@@ -140,7 +140,7 @@ the only test in the repo that needs a Docker daemon.
 | `spotify.authUri` / `spotify.apiUri` | Spotify OAuth token endpoint and API base URL |
 | `mysql.host` / `mysql.user` / `mysql.password` | required in production; the dev file defaults to `localhost`/`root`/empty, matching `backend/docker-compose.yml up -d mysql` |
 
-## 9. Build & maintenance
+## Build & maintenance
 
 ```bash
 ./gradlew build
@@ -148,21 +148,21 @@ the only test in the repo that needs a Docker daemon.
 ./gradlew dependencyUpdates   # CSV report in build/dependencyUpdates/report — check before bumping deps by hand
 ```
 
-## 10. Git
+## Git
 
 Remote: `git@github.com:luiznaac/label-follower.git`. Commits are lowercase,
 imperative/gerund (`"Persisting tracks to txt"`, `"Fixing tests"`), merged via numbered PRs.
 `.gitignore` ignores `*.txt` — a leftover from the pre-MySQL flat-file persistence
 (§8); harmless, kept for old checkouts, no longer relevant to how the app persists data.
 
-**AI agents: never commit directly to `master`.** Always create a feature branch and open a PR,
-even for a small or "obviously safe" change — no exceptions for agent-authored commits.
+**Do not commit directly to `master`.** Always create a feature branch and open a PR,
+even for a small or "obviously safe" change — no exceptions.
 
-## 11. Related repositories
+## Related repositories
 
-Same author/family as [chameidor](../../chameidor/CLAUDE.md) and
-[portfolio-2](../../portfolio-2/CLAUDE.md), but architecturally the odd one out — it predates their
-Ktor multi-module pattern. Don't port conventions from those two here without being asked; equally,
-don't use this repo's structure as a template for new services in this family. The `backend/` +
-`frontend/` monorepo shape and the frontend stack are borrowed from
-[shougong](../../shougong/CLAUDE.md).
+Same author/family as [chameidor](../../chameidor/DEVELOPMENT.md) and
+[portfolio-2](../../portfolio-2/DEVELOPMENT.md), but architecturally the odd one out — it predates
+their Ktor multi-module pattern. Don't port conventions from those two here without being asked;
+equally, don't use this repo's structure as a template for new services in this family. The
+`backend/` + `frontend/` monorepo shape and the frontend stack are borrowed from
+[shougong](../../shougong/DEVELOPMENT.md).
