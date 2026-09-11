@@ -38,7 +38,7 @@ class LabelIntrospectorTest : StringSpec({
         }
     }
 
-    "should correctly get new tracks from label" {
+    "should find new tracks from label without recording them" {
         val label = Label(name = "Label 1", copyrights = setOf("Copyrigth 1"))
         val alreadyFoundTrack1 = Track(name = "Track 1", isrc = "AABB123", spotifyId = "1")
         val alreadyFoundTrack2 = Track(name = "Track 2", isrc = "ZZYY543", spotifyId = "2")
@@ -52,14 +52,29 @@ class LabelIntrospectorTest : StringSpec({
             newTrack2
         )
         coEvery { ourInfoGateway.getTracksFrom(any()) } returns setOf(alreadyFoundTrack1, alreadyFoundTrack2)
-        coEvery { ourInfoGateway.saveTracks(any(), any()) } just Runs
 
-        introspector.discoverNewTracksFrom(label) shouldBe setOf(newTrack1, newTrack2)
+        introspector.findNewTracksFrom(label) shouldBe setOf(newTrack1, newTrack2)
 
         coVerify(exactly = 1) {
             externalInfoGateway.getTracksFrom(label)
             ourInfoGateway.getTracksFrom(label)
-            ourInfoGateway.saveTracks(setOf(newTrack1, newTrack2), label)
         }
+        coVerify(exactly = 0) { ourInfoGateway.saveTracks(any(), any()) }
+    }
+
+    "discovering from a track records the new tracks under the track's label" {
+        val label = Label(name = "Label 1", copyrights = setOf("Copyrigth 1"))
+        val seed = Track(name = "Seed", isrc = "AABB123", spotifyId = "1")
+        val newTrack = Track(name = "New", isrc = "CCDD456", spotifyId = "3")
+
+        coEvery { externalInfoGateway.getLabel(seed.isrc) } returns label
+        coEvery { ourInfoGateway.getLabelBy(label.name) } returns null
+        coEvery { externalInfoGateway.getTracksFrom(label) } returns setOf(seed, newTrack)
+        coEvery { ourInfoGateway.getTracksFrom(label) } returns setOf(seed)
+        coEvery { ourInfoGateway.saveTracks(any(), any()) } just Runs
+
+        introspector.discoverNewTracksFrom(seed) shouldBe setOf(newTrack)
+
+        coVerify(exactly = 1) { ourInfoGateway.saveTracks(setOf(newTrack), label) }
     }
 })

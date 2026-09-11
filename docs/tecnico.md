@@ -101,7 +101,7 @@ em `/api/*` e remove o prefixo; em dev, o proxy do Vite faz o mesmo.
 | `GET /track/{isrc}` | ISRC no path | `200` `Track` | ISRC inexistente → `500` (`NoSuchElementException`) — [B7](bugs-e-melhorias.md#b7) |
 | `GET /introspect/fromTrack/{isrc}` | ISRC | `200` `Track[]` — catálogo recente do selo (RN-04). **Não grava.** | idem; álbum problemático → `500` ([B4](bugs-e-melhorias.md#b4), [B5](bugs-e-melhorias.md#b5)) |
 | `POST /introspect/newTracks/{isrc}` | ISRC | `200` `Track[]` — faixas novas (RN-05). **Grava** selo, copyrights e faixas. | idem |
-| `POST /consolidate` | — | `200` sem corpo, só ao terminar tudo (síncrono) | sem conta conectada → `500`, **depois** de já ter gravado as faixas ([B2](bugs-e-melhorias.md#b2)); timeout do proxy ([B8](bugs-e-melhorias.md#b8)) |
+| `POST /consolidate` | — | `200` sem corpo, só ao terminar tudo (síncrono) | algum selo falhou (ex.: sem conta conectada) → `500` listando os selos; as faixas deles continuam novas ([B2](bugs-e-melhorias.md#b2), corrigido no #20); timeout do proxy ([B8](bugs-e-melhorias.md#b8)) |
 | `GET /auth/spotify/status` | — | `200` `{ "connected": boolean }` — só verifica se há conta no banco | — |
 | `POST /auth/spotify/exchange` | `{ "code", "redirectUri" }` | `200` sem corpo | código inválido → `500` (`ExternalServiceException` com o `400` do Spotify; uma resposta clara é o [B7](bugs-e-melhorias.md#b7)) |
 | `DELETE /auth/spotify` | — | `200` sem corpo; apaga a conta guardada | — |
@@ -171,14 +171,16 @@ sequenceDiagram
     LI->>SG: getTracksFrom(label)
     SG-->>LI: catálogo recente
     LI->>DB: getTracksFrom(label)
-    DB->>M: upsert label + copyrights (sim, numa leitura)
-    DB->>M: SELECT faixas vinculadas
+    DB->>M: SELECT selo e faixas vinculadas (só leitura)
     DB-->>LI: faixas conhecidas
-    Note over LI: novas = catálogo − conhecidas (por ISRC) — RN-05
-    LI->>DB: saveTracks(novas, label)
-    DB->>M: upsert label, upsert track (por ISRC), insert label_track
+    Note over LI: findNewTracksFrom: novas = catálogo − conhecidas (por ISRC) — RN-05
+    LI->>DB: markAsKnown → saveTracks(novas, label)
+    DB->>M: upsert label + copyrights, upsert track (por ISRC), insert label_track
     LI-->>LI: devolve as novas
 ```
+
+`findNewTracksFrom` não grava nada; quem grava é `markAsKnown`. No Explorar os dois rodam em
+sequência. No Consolidar, `markAsKnown` só roda depois de a playlist existir (4.4).
 
 ### 4.3 Conectar o Spotify
 
@@ -223,24 +225,27 @@ sequenceDiagram
 
     C->>CO: introspectAllLabelsAndNotify()
     CO->>DB: getLabels()
-    loop todos os selos (antes de qualquer playlist)
-        CO->>LI: discoverNewTracksFrom(label)
-        LI->>DB: saveTracks(novas) — já ficam "conhecidas"
-    end
-    loop selos com novidades
-        CO->>PG: createPlaylistWith(label, faixas)
-        PG->>SUA: getFreshAccessToken() — refresh se expirou
-        PG->>SUA: getSpotifyUserId()
-        PG->>S: POST /v1/users/{id}/playlists {name}
-        loop lotes de 5
-            PG->>S: POST /v1/playlists/{id}/tracks {uris}
+    loop cada selo, isolado (falha vira resultado "Failed" e o laço segue)
+        CO->>LI: findNewTracksFrom(label) — não grava
+        alt tem faixas novas
+            CO->>PG: createPlaylistWith(label, faixas)
+            PG->>SUA: getFreshAccessToken() — refresh se expirou
+            PG->>SUA: getSpotifyUserId()
+            PG->>S: POST /v1/users/{id}/playlists {name}
+            loop lotes de 5
+                PG->>S: POST /v1/playlists/{id}/tracks {uris}
+            end
+            CO->>LI: markAsKnown(faixas, label) — só agora ficam conhecidas
         end
     end
-    CO->>CO: println(resultado)
+    CO->>CO: log do ConsolidationReport (SLF4J)
+    Note over CO: algum selo falhou → ConsolidationFailedException (500)
 ```
 
-A ordem dos dois loops é a causa do [B2](bugs-e-melhorias.md#b2): uma falha no segundo loop não
-desfaz o que o primeiro gravou.
+Desde o #20 ([B2](bugs-e-melhorias.md#b2)): as faixas de um selo só viram "conhecidas" depois que a
+playlist dele existe. Um selo com falha não interrompe os outros e mantém as faixas novas para a
+próxima execução. A garantia é *at-least-once*: se a playlist for criada e a gravação falhar, a
+próxima execução cria outra playlist com as mesmas faixas.
 
 ## 5. Modelo de dados
 
@@ -412,10 +417,11 @@ O `./gradlew bootRun` carrega o `.env` da raiz (sem sobrescrever variáveis já 
 | `MigrationSchemaTest` | integração (Testcontainers MySQL) | migrations = tabelas Exposed |
 | `RafaHttpTest` | integração (MockWebServer) | URL com base/porta, JSON e form, erros, retry de 429/5xx, log sem headers |
 | `SpotifyPropertiesTest` | unitário | os perfis default e `production` resolvem a mesma base da API |
+| `ConsolidatorTest` | unitário (`LabelIntrospector` real + portas mockadas) | ordem playlist → gravação, falha isolada por selo, selos sem novidade |
+| `OurInfoGatewayImplTest` | integração (Testcontainers MySQL) | leitura sem efeito colateral, gravação idempotente, copyrights aprendidos |
 
-**Sem cobertura**: `Consolidator`, `Label.matches`, `SpotifyAlbum.toLabel`, filtros de data do
-`SpotifyGateway`, `OurInfoGatewayImpl`, `SpotifyUserAuth`, `SpotifyUserPlaylistGateway`,
-controllers e todo o frontend. O detekt roda só as regras de formatação (`disableDefaultRuleSets = true`).
+**Sem cobertura**: `Label.matches`, `SpotifyAlbum.toLabel`, filtros de data do `SpotifyGateway`,
+`SpotifyUserAuth`, `SpotifyUserPlaylistGateway`, controllers e todo o frontend. O detekt roda só as regras de formatação (`disableDefaultRuleSets = true`).
 
 ## 11. Estado verificado em 2026-09-10
 
@@ -432,7 +438,7 @@ ISRC `GBEWA2205680` (selo "This Never Happened").
 | `GET /introspect/fromTrack/{isrc}` | ✅ 173 faixas em ~8 s · ❌ 9 ISRCs duplicados; 10 erros de `key` no React — [B6](bugs-e-melhorias.md#b6) |
 | `POST /introspect/newTracks/{isrc}` | ✅ 1ª chamada gravou 163 faixas; 2ª devolveu `[]` |
 | `GET /auth/spotify/status` | ✅ |
-| `POST /consolidate` sem conta conectada | ❌ `500` e as faixas novas ficaram marcadas como conhecidas sem playlist — [B2](bugs-e-melhorias.md#b2) |
+| `POST /consolidate` sem conta conectada | ❌ `500` e as faixas novas ficaram marcadas como conhecidas sem playlist — [B2](bugs-e-melhorias.md#b2). ✅ Corrigido no #20: continua `500`, mas as faixas seguem novas (vínculos ficam em 158) |
 | Perfil `production` (o da imagem Docker) | ❌ toda chamada ao Spotify falha com `unexpected host: api.spotify.com/v1/` — [B1](bugs-e-melhorias.md#b1). ✅ Corrigido no #19: `/track` e `/introspect/fromTrack` respondem `200` |
 | Logs | ❌ header `Basic` (client secret) e tokens `Bearer` impressos no stdout — [B19](bugs-e-melhorias.md#b19). ✅ Corrigido no #19: só método, URL e status |
 | Conectar conta + Consolidar com playlists | ⏸ não executado (exige login e cria playlists reais) |
