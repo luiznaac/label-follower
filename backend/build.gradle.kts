@@ -79,6 +79,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.11")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("org.testcontainers:mysql:1.21.3")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 }
 

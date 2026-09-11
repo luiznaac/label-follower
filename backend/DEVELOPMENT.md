@@ -42,7 +42,10 @@ Single Gradle module, `backend/src/main/kotlin/com/rafaelfo/labelfollower/`:
     `SpotifyUserPlaylistGateway`, `SpotifyAuth`, plus `models/`/`responses/` for the Spotify JSON
     shapes).
   - `integrations/httputils/` — small OkHttp wrapper (`RafaHttp`) and response helpers shared by
-    the Spotify gateways.
+    the Spotify gateways. `RafaHttp` resolves `path` under a base URL, returns a fully-read
+    `HttpResult`, throws `ExternalServiceException` for any non-2xx, retries 429 (and transient
+    5xx for GETs only — never replay a POST) and logs method/URL/status only. Never log request
+    headers: they carry the client secret and user tokens.
 - **`models/`** — plain domain data classes, `Label` and `Track`.
 - **`application/`** — `Boot.kt`, the Spring Boot entry point.
 - **`config/`, `profiles/`** — Spring `@Configuration`/`@Profile` setup (`Development.kt`).
@@ -100,7 +103,8 @@ Run `./gradlew detekt` before finishing a change.
 Kotest (`kotest-runner-junit5`, `kotest-extensions-spring`), MockK. Tests live in
 `src/test/kotlin/com/rafaelfo/labelfollower/...`, mirroring the main package layout. Existing
 tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.kt`,
-`TrackFinderTest.kt`.
+`TrackFinderTest.kt`. For anything that talks HTTP, `RafaHttpTest.kt` shows the pattern: a real
+`RafaHttp` against OkHttp's `MockWebServer` (point the base URL at `server.url(...)`).
 
 ```bash
 ./gradlew test

@@ -6,24 +6,25 @@
 >
 > **Prioridade:** P0 crítico (quebra o produto ou perde dados) · P1 alto · P2 médio (risco de negócio) · P3 qualidade.
 > **Evidência:** 🧪 reproduzido em teste · 📖 identificado lendo o código.
+> **Status:** ✅ corrigido (com o PR) · em branco = aberto.
 
 ## Resumo
 
-| # | Prioridade | Evidência | Problema |
-|---|---|---|---|
-| [B1](#b1) | P0 | 🧪 | Imagem Docker não consegue chamar o Spotify (`apiUri` de produção) |
-| [B2](#b2) | P0 | 🧪 | Consolidar perde faixas novas quando algo falha |
-| [B3](#b3) | P0 | 📖 | Erros HTTP do Spotify são ignorados |
-| [B19](#b19) | P0 | 🧪 | Client secret e tokens impressos nos logs |
-| [B4](#b4) | P1 | 📖 | Data de lançamento só com ano/mês derruba o selo |
-| [B5](#b5) | P1 | 📖 | Álbum sem copyright/selo derruba o selo |
-| [B6](#b6) | P1 | 🧪 | Faixas duplicadas (mesmo ISRC, ids diferentes) |
-| [B7](#b7) | P1 | 🧪 | Todo erro vira 500 sem mensagem útil |
-| [B8](#b8) | P1 | 📖 | Consolidar síncrono, sem trava contra execução dupla |
-| [B9](#b9) | P1 | 📖 | Conectar outra conta mistura as duas |
-| [B10](#b10) | P1* | 📖 | API sem autenticação, OAuth sem `state`, MySQL exposto sem senha |
-| [B11](#b11)–[B18](#b18) | P2 | 📖 | Riscos de negócio (copyright, janela de datas, selo errado, playlists…) |
-| [P3](#p3) | P3 | 📖/🧪 | Qualidade de código e infraestrutura |
+| # | Prioridade | Evidência | Problema | Status |
+|---|---|---|---|---|
+| [B1](#b1) | P0 | 🧪 | Imagem Docker não consegue chamar o Spotify (`apiUri` de produção) | ✅ #19 |
+| [B2](#b2) | P0 | 🧪 | Consolidar perde faixas novas quando algo falha | |
+| [B3](#b3) | P0 | 📖 | Erros HTTP do Spotify são ignorados | ✅ #19 |
+| [B19](#b19) | P0 | 🧪 | Client secret e tokens impressos nos logs | ✅ #19 |
+| [B4](#b4) | P1 | 📖 | Data de lançamento só com ano/mês derruba o selo | |
+| [B5](#b5) | P1 | 📖 | Álbum sem copyright/selo derruba o selo | |
+| [B6](#b6) | P1 | 🧪 | Faixas duplicadas (mesmo ISRC, ids diferentes) | |
+| [B7](#b7) | P1 | 🧪 | Todo erro vira 500 sem mensagem útil | |
+| [B8](#b8) | P1 | 📖 | Consolidar síncrono, sem trava contra execução dupla | |
+| [B9](#b9) | P1 | 📖 | Conectar outra conta mistura as duas | |
+| [B10](#b10) | P1* | 📖 | API sem autenticação, OAuth sem `state`, MySQL exposto sem senha | |
+| [B11](#b11)–[B18](#b18) | P2 | 📖 | Riscos de negócio (copyright, janela de datas, selo errado, playlists…) | |
+| [P3](#p3) | P3 | 📖/🧪 | Qualidade de código e infraestrutura | |
 
 \* B10 sobe para P0 se o app estiver exposto na internet.
 
@@ -31,9 +32,12 @@
 
 ## P0 — críticos
 
-### <a id="b1"></a>B1 · Imagem Docker não consegue chamar o Spotify 🧪
+### <a id="b1"></a>B1 · Imagem Docker não consegue chamar o Spotify 🧪 ✅
 
-- **Onde:** `backend/src/main/resources/application-production.properties:4`, `RafaHttp.kt:44-47`.
+- **Status:** corrigido no #19. O arquivo de produção só sobrescreve o MySQL e herda `spotify.*`;
+  `SpotifyPropertiesTest` garante que os dois perfis resolvem a mesma base. Verificado com o perfil
+  `production` contra a API real: `/track` e `/introspect/fromTrack` respondem `200`.
+- **Onde (antes da correção):** `backend/src/main/resources/application-production.properties:4`, `RafaHttp.kt:44-47`.
 - **O que acontece:** o perfil `production` (ativado pelo `Dockerfile`) define
   `spotify.apiUri=https://api.spotify.com/v1/`. O `RafaHttp.get` separa a URL em `scheme` e `host`
   com `split("://")` e passa `api.spotify.com/v1/` como host → `IllegalArgumentException: unexpected host`.
@@ -58,26 +62,30 @@
   tentado de novo na próxima execução. `POST /introspect/newTracks` mantém o comportamento atual
   (descobrir + gravar).
 
-### <a id="b3"></a>B3 · Erros HTTP do Spotify são ignorados 📖
+### <a id="b3"></a>B3 · Erros HTTP do Spotify são ignorados 📖 ✅
 
-- **Onde:** `RafaHttp.kt`, `ResponseHelpers.kt:7-8`, `SpotifyUserPlaylistGateway.kt:32-38`.
+- **Status:** corrigido no #19. O `RafaHttp` devolve um `HttpResult` já lido e fechado e lança
+  `ExternalServiceException(method, url, status, body)` fora de 2xx. Ele repete 429 respeitando
+  `Retry-After` e repete 502/503/504 **só em GET**, porque um POST pode ter criado a playlist. Usa um
+  `OkHttpClient` compartilhado e envia `Content-Type: application/json`. Na verificação, um `502`
+  transitório do Spotify apareceu como `ExternalServiceException … HTTP 502`, e não mais como NPE.
+- **Onde (antes da correção):** `RafaHttp.kt`, `ResponseHelpers.kt:7-8`, `SpotifyUserPlaylistGateway.kt:32-38`.
 - **O que acontece:** o status HTTP nunca é verificado. O Gson faz parse do corpo de erro e, como
   ignora a nulidade do Kotlin, gera objetos com campos nulos que explodem depois, longe da origem
   (ex.: trocar um código OAuth inválido termina num erro de `NOT NULL` do banco). A resposta de
   "adicionar faixas à playlist" nunca é verificada nem fechada: faixas podem não entrar sem aviso.
   Não há tratamento de `429 Too Many Requests`/`Retry-After`, e cada requisição cria um `OkHttpClient` novo.
-- **Correção:** um `OkHttpClient` compartilhado; `use {}` em toda resposta; exceção tipada
-  (`SpotifyApiException(status, corpo)`) em qualquer status não-2xx; retry limitado em 429 respeitando
-  `Retry-After`; `Content-Type: application/json` nos POSTs com JSON.
+### <a id="b19"></a>B19 · Client secret e tokens impressos nos logs 🧪 ✅
 
-### <a id="b19"></a>B19 · Client secret e tokens impressos nos logs 🧪
-
-- **Onde:** `RafaHttp.kt:77` — `println("RafaHttp: $this")`.
+- **Status:** corrigido no #19. O log agora é `GET <url> -> <status> (<ms> ms)` via SLF4J; um teste com
+  appender do Logback garante que nenhum valor de header aparece. Verificado com o perfil `production`:
+  nenhuma ocorrência de `Authorization`, `Bearer` ou `Basic` no log.
+- **Onde (antes da correção):** `RafaHttp.kt:77` — `println("RafaHttp: $this")`.
 - **O que acontece:** o `Request.toString()` do OkHttp 4.12 inclui os headers **sem mascarar**. Cada
   pedido de token imprime `Authorization: Basic base64(clientId:clientSecret)`, e cada chamada imprime o
   `Bearer` (do app ou do usuário). Na imagem Docker, isso vai para os logs do container.
-- **Correção:** logar só método, URL e status (SLF4J), nunca headers. **Ação fora do código:** se logs
-  de algum ambiente foram guardados ou compartilhados, gere um novo client secret no painel do Spotify.
+- **Ação fora do código:** se logs de algum ambiente com a imagem antiga foram guardados ou
+  compartilhados, gere um novo client secret no painel do Spotify.
 
 ## P1 — altos
 
@@ -175,7 +183,8 @@ nginx ou token no Spring) antes de qualquer outra coisa.
   desliga as regras configuradas no `config.yml`. Evidência: `MagicNumber` está ativo lá, e o `1000` em
   `SpotifyLabelGateway.kt:34` não foi apontado (0 findings em 41 arquivos). Religar num PR próprio,
   corrigindo os findings ou criando um baseline.
-- `println` em vez de SLF4J; Gson em DTOs Kotlin (Jackson + `jackson-module-kotlin` já estão no classpath).
+- `println` em vez de SLF4J em `SpotifyAuth` e `Consolidator` (o `RafaHttp` já usa SLF4J desde o #19);
+  Gson em DTOs Kotlin (Jackson + `jackson-module-kotlin` já estão no classpath).
 - Dependências sem uso: `kotest-extensions-spring:4.4.3` (artefato do Kotest 4 junto com o 5.9),
   `kotlinx-coroutines`, `spring-boot-starter-validation`, `exposed-json`; `profiles/Development.kt` sem uso;
   testes usam `coEvery`/`coVerify` em funções que não são `suspend`.
@@ -191,7 +200,7 @@ nginx ou token no Spring) antes de qualquer outra coisa.
 - Front: `useDiscoverNewTracks` invalida o catálogo sem necessidade (`queries.ts:34-36`), refazendo ~16
   chamadas ao Spotify; sem testes nem ESLint.
 - Cobertura de testes: nada para `Consolidator`, `Label.matches`, `SpotifyAlbum.toLabel`, filtros de data,
-  `OurInfoGatewayImpl`, `SpotifyUserAuth`, `SpotifyUserPlaylistGateway`, `RafaHttp` e controllers.
+  `OurInfoGatewayImpl`, `SpotifyUserAuth`, `SpotifyUserPlaylistGateway` e controllers.
 
 ---
 
@@ -203,7 +212,7 @@ correção. Mudança de contrato da API atualiza `frontend/src/api/types.ts` no 
 | Ordem | PR | Itens | Observação |
 |---|---|---|---|
 | 1 | Documentação | este diretório `docs/`, docs obsoletas, remoção de `backend/mysql/init.sql` | |
-| 2 | Camada HTTP | B1, B3, B19 | MockWebServer; base para testar todos os gateways |
+| 2 | Camada HTTP | B1, B3, B19 | ✅ #19 — MockWebServer; base para testar todos os gateways |
 | 3 | Atomicidade do Consolidar | B2 | testes do `Consolidator` com gateway de playlist falhando |
 | 4 | Robustez do catálogo | B4, B5, B6 | testes com os formatos reais do Spotify |
 | 5 | Erros da API | B7 | `@RestControllerAdvice`; front passa a mostrar a mensagem |

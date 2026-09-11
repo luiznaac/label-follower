@@ -103,7 +103,7 @@ em `/api/*` e remove o prefixo; em dev, o proxy do Vite faz o mesmo.
 | `POST /introspect/newTracks/{isrc}` | ISRC | `200` `Track[]` — faixas novas (RN-05). **Grava** selo, copyrights e faixas. | idem |
 | `POST /consolidate` | — | `200` sem corpo, só ao terminar tudo (síncrono) | sem conta conectada → `500`, **depois** de já ter gravado as faixas ([B2](bugs-e-melhorias.md#b2)); timeout do proxy ([B8](bugs-e-melhorias.md#b8)) |
 | `GET /auth/spotify/status` | — | `200` `{ "connected": boolean }` — só verifica se há conta no banco | — |
-| `POST /auth/spotify/exchange` | `{ "code", "redirectUri" }` | `200` sem corpo | código inválido → `500` com erro pouco claro ([B3](bugs-e-melhorias.md#b3)) |
+| `POST /auth/spotify/exchange` | `{ "code", "redirectUri" }` | `200` sem corpo | código inválido → `500` (`ExternalServiceException` com o `400` do Spotify; uma resposta clara é o [B7](bugs-e-melhorias.md#b7)) |
 | `DELETE /auth/spotify` | — | `200` sem corpo; apaga a conta guardada | — |
 
 `Track` no JSON: `{ "name": string, "isrc": string, "spotifyId": string }` (camelCase, serializado
@@ -331,14 +331,19 @@ dois de playlist ainda não foram exercitados nesta verificação (exigem conect
 
 ### Camada HTTP (`RafaHttp`)
 
-- `get(url, path, headers, query)` monta a URL com `HttpUrl.Builder` a partir de `scheme://host` —
-  **não aceita** base com caminho ou porta ([B1](bugs-e-melhorias.md#b1)).
-- `post(url, formBody | body)`: JSON via Gson, **sem `Content-Type`**.
-- Cria um `OkHttpClient` novo por requisição, não verifica o status HTTP, não fecha a resposta quando
-  não lê o corpo e loga `Request.toString()` — **que inclui os headers de autorização**
-  ([B3](bugs-e-melhorias.md#b3), [B19](bugs-e-melhorias.md#b19)).
-- `parsedBody<T>()` usa Gson, que ignora a nulidade do Kotlin: um corpo de erro vira objeto com
-  campos nulos e explode depois, longe da origem.
+Desde o #19 ([B1](bugs-e-melhorias.md#b1), [B3](bugs-e-melhorias.md#b3), [B19](bugs-e-melhorias.md#b19)):
+
+- `get(url, path, headers, query)` e `post(url, path, formBody | body, headers)` resolvem `path` sob a
+  base com `toHttpUrl().newBuilder().addPathSegments()`, que aceita base com caminho ou porta.
+- Devolvem um `HttpResult(status, body, retryAfterSeconds)` já lido, com a conexão liberada. Nada precisa ser fechado.
+- Status fora de 2xx → `ExternalServiceException(method, url, status, responseBody)`.
+- Retry: `429` em qualquer método, respeitando `Retry-After` (até 3 vezes, no máximo 30 s de espera);
+  `502/503/504` **só em GET**, porque um POST pode já ter criado a playlist.
+- Um `OkHttpClient` compartilhado. JSON enviado com `Content-Type: application/json`.
+- Log via SLF4J: `GET <url> -> <status> (<ms> ms)`. **Nunca** loga headers, que carregam o client
+  secret e os tokens.
+- `parsedBody<T>()` continua com Gson, que ignora a nulidade do Kotlin. Agora só recebe corpos de
+  respostas 2xx.
 
 ## 7. Frontend
 
@@ -364,7 +369,7 @@ dois de playlist ainda não foram exercitados nesta verificação (exigem conect
 | `spotify.clientId` | `5a5af3ea…` | igual | público |
 | `spotify.clientSecret` | `${SPOTIFY_CLIENT_SECRET}` | igual | obrigatório |
 | `spotify.authUri` | `https://accounts.spotify.com/api/token/` | igual | |
-| `spotify.apiUri` | `https://api.spotify.com` | `https://api.spotify.com/v1/` | **o valor de produção quebra tudo** — [B1](bugs-e-melhorias.md#b1) |
+| `spotify.apiUri` | `https://api.spotify.com` | igual (herdado) | só o host: cada gateway acrescenta `v1/...`. Até o #19 o arquivo de produção redefinia como `.../v1/` e quebrava a imagem ([B1](bugs-e-melhorias.md#b1)) |
 | `mysql.host` / `user` / `password` | `localhost` / `root` / vazio | sem default (`MYSQL_*` obrigatórios) | |
 | `mysql.port` | `3306` | `3306` | opcional, via `MYSQL_PORT` |
 
@@ -405,9 +410,11 @@ O `./gradlew bootRun` carrega o `.env` da raiz (sem sobrescrever variáveis já 
 | `LabelIntrospectorTest` | unitário | catálogo a partir da faixa; diff de faixas novas |
 | `TrackFinderTest` | unitário | delegação trivial |
 | `MigrationSchemaTest` | integração (Testcontainers MySQL) | migrations = tabelas Exposed |
+| `RafaHttpTest` | integração (MockWebServer) | URL com base/porta, JSON e form, erros, retry de 429/5xx, log sem headers |
+| `SpotifyPropertiesTest` | unitário | os perfis default e `production` resolvem a mesma base da API |
 
 **Sem cobertura**: `Consolidator`, `Label.matches`, `SpotifyAlbum.toLabel`, filtros de data do
-`SpotifyGateway`, `OurInfoGatewayImpl`, `SpotifyUserAuth`, `SpotifyUserPlaylistGateway`, `RafaHttp`,
+`SpotifyGateway`, `OurInfoGatewayImpl`, `SpotifyUserAuth`, `SpotifyUserPlaylistGateway`,
 controllers e todo o frontend. O detekt roda só as regras de formatação (`disableDefaultRuleSets = true`).
 
 ## 11. Estado verificado em 2026-09-10
@@ -426,6 +433,6 @@ ISRC `GBEWA2205680` (selo "This Never Happened").
 | `POST /introspect/newTracks/{isrc}` | ✅ 1ª chamada gravou 163 faixas; 2ª devolveu `[]` |
 | `GET /auth/spotify/status` | ✅ |
 | `POST /consolidate` sem conta conectada | ❌ `500` e as faixas novas ficaram marcadas como conhecidas sem playlist — [B2](bugs-e-melhorias.md#b2) |
-| Perfil `production` (o da imagem Docker) | ❌ toda chamada ao Spotify falha com `unexpected host: api.spotify.com/v1/` — [B1](bugs-e-melhorias.md#b1) |
-| Logs | ❌ header `Basic` (client secret) e tokens `Bearer` impressos no stdout — [B19](bugs-e-melhorias.md#b19) |
+| Perfil `production` (o da imagem Docker) | ❌ toda chamada ao Spotify falha com `unexpected host: api.spotify.com/v1/` — [B1](bugs-e-melhorias.md#b1). ✅ Corrigido no #19: `/track` e `/introspect/fromTrack` respondem `200` |
+| Logs | ❌ header `Basic` (client secret) e tokens `Bearer` impressos no stdout — [B19](bugs-e-melhorias.md#b19). ✅ Corrigido no #19: só método, URL e status |
 | Conectar conta + Consolidar com playlists | ⏸ não executado (exige login e cria playlists reais) |
