@@ -19,8 +19,11 @@ class OurInfoGatewayImpl(
     private val clock: Clock,
 ) : OurInfoGateway {
 
+    // A pure read: a label we never recorded simply has no tracks yet. (It used to upsert the label
+    // here, which made "find new tracks" record things as a side effect — see LabelIntrospector.)
     override fun getTracksFrom(label: Label): Set<Track> = transaction {
-        val labelEntity = upsertLabel(label)
+        val labelEntity = LabelEntity.find { LabelTable.canonicalName eq label.name }.firstOrNull()
+            ?: return@transaction emptySet()
 
         val trackIds = LabelTrackTable
             .selectAll()
