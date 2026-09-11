@@ -79,6 +79,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.11")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("org.testcontainers:mysql:1.21.3")
+    testImplementation("com.lemonappdev:konsist:0.17.3")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 }
 
