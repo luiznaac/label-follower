@@ -1,6 +1,7 @@
 package com.rafaelfo.labelfollower.integrations.spotify
 
 import com.google.gson.GsonBuilder
+import com.rafaelfo.labelfollower.integrations.httputils.HttpResult
 import com.rafaelfo.labelfollower.integrations.httputils.RafaHttp
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -8,8 +9,6 @@ import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import okhttp3.Response
-import okhttp3.ResponseBody
 import java.time.Clock
 import java.time.Instant.now
 import java.util.Base64
@@ -32,11 +31,8 @@ class SpotifyAuthTest : StringSpec({
 
     "should correctly get token" {
         val expectedToken = "THIS_IS_MY_TOKEN"
-        val response = mockk<Response>()
-        val body = mockk<ResponseBody>()
-        coEvery { response.body } returns body
-        coEvery { body.string() } returns gson.toJson(authResponse(expectedToken))
-        coEvery { rafaHttp.post(any(), any(), any(), any()) } returns response
+        coEvery { rafaHttp.post(any(), any(), any(), any(), any()) } returns
+            ok(gson.toJson(authResponse(expectedToken)))
 
         auth.getToken() shouldBe expectedToken
         coVerify(exactly = 1) {
@@ -53,11 +49,8 @@ class SpotifyAuthTest : StringSpec({
 
     "should not get token if token is already set" {
         val expectedToken = "THIS_IS_MY_TOKEN_2"
-        val response = mockk<Response>()
-        val body = mockk<ResponseBody>()
-        coEvery { response.body } returns body
-        coEvery { body.string() } returns gson.toJson(authResponse(expectedToken))
-        coEvery { rafaHttp.post(any(), any(), any(), any()) } returns response
+        coEvery { rafaHttp.post(any(), any(), any(), any(), any()) } returns
+            ok(gson.toJson(authResponse(expectedToken)))
 
         auth.getToken() shouldBe expectedToken
         auth.getToken() shouldBe expectedToken
@@ -77,14 +70,10 @@ class SpotifyAuthTest : StringSpec({
     "should get new token if token is expired" {
         val expectedToken1 = "THIS_IS_MY_TOKEN_1"
         val expectedToken2 = "THIS_IS_MY_TOKEN_2"
-        val response = mockk<Response>()
-        val body = mockk<ResponseBody>()
-        coEvery { response.body } returns body
-        coEvery { body.string() } returnsMany listOf(
-            gson.toJson(authResponse(expectedToken1)),
-            gson.toJson(authResponse(expectedToken2)),
+        coEvery { rafaHttp.post(any(), any(), any(), any(), any()) } returnsMany listOf(
+            ok(gson.toJson(authResponse(expectedToken1))),
+            ok(gson.toJson(authResponse(expectedToken2))),
         )
-        coEvery { rafaHttp.post(any(), any(), any(), any()) } returns response
 
         auth.getToken() shouldBe expectedToken1
 
@@ -103,6 +92,8 @@ class SpotifyAuthTest : StringSpec({
         }
     }
 })
+
+private fun ok(body: String) = HttpResult(status = 200, body = body)
 
 private fun authResponse(expectedToken: String) = AuthResponseForTest(
     access_token = expectedToken,
