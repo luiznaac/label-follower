@@ -48,7 +48,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
 
     // Persistence — MySQL via Exposed, same stack as the sibling Kotlin services
-    // (portfolio-2/chameidor). Single Gradle module here (see backend/DEVELOPMENT.md "Architecture"),
+    // (portfolio-2/chameidor). Single Gradle module here (see backend/AGENTS.md "Architecture"),
     // so tables/repositories live under integrations/database/ instead of a
     // separate `persistence` module.
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
@@ -174,7 +174,7 @@ fun isNonStable(version: String): Boolean {
     return isStable.not()
 }
 
-// Authoring half of the migration workflow (backend/DEVELOPMENT.md "Database migrations"). Diffs
+// Authoring half of the migration workflow (backend/AGENTS.md "Database migrations"). Diffs
 // the Exposed tables in `allTables` against a local database already migrated to head, and writes
 // the SQL that closes the gap into src/main/resources/db/migration/. Exposed only *generates* —
 // Flyway applies.

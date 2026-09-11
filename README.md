@@ -32,7 +32,7 @@ and already in `backend/src/main/resources/application.properties`). For the "Co
 register `http://127.0.0.1:5274/callback` as a redirect URI in the Spotify app.
 
 See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for
-details, and [DEVELOPMENT.md](DEVELOPMENT.md) for architecture and conventions.
+details, and [AGENTS.md](AGENTS.md) for architecture and conventions.
 
 ## Docker
 

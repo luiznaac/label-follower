@@ -11,7 +11,7 @@ const val MIGRATIONS_DIRECTORY = "src/main/resources/db/migration"
 
 // Writes the SQL that would bring a local database up to what the Exposed tables declare — the
 // authoring half of the migration workflow (`./gradlew generateMigrationScript -Pname=...`, see
-// backend/DEVELOPMENT.md "Database migrations"). Exposed only generates the script; Flyway is what
+// backend/AGENTS.md "Database migrations"). Exposed only generates the script; Flyway is what
 // applies it. Always read the output before committing it: the diff is mechanical and won't, for
 // instance, know that a rename is a rename rather than a drop plus an add.
 @OptIn(ExperimentalDatabaseMigrationApi::class)

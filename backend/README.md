@@ -65,7 +65,7 @@ cd backend
 - `.../integrations/database/` — where label/track info we already know about is stored (MySQL, via Exposed).
 - `.../models/` — the core `Label` and `Track` concepts.
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for architecture details and conventions if you're making changes.
+See [AGENTS.md](AGENTS.md) for architecture details and conventions if you're making changes.
 
 ## Note
 
