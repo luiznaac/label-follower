@@ -145,7 +145,7 @@ tasks.withType<Detekt> {
     autoCorrect = true
     ignoreFailures = false
     setSource(files(projectDir))
-    include("*/.kt", "*/.kts")
+    include("**/*.kt", "**/*.kts")
     config.setFrom(files("$rootDir/config/detekt/config.yml", "$rootDir/config/detekt/format.yml"))
     reports {
         xml.required.set(false)
