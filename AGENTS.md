@@ -1,12 +1,12 @@
-# DEVELOPMENT.md — label-follower monorepo
+# AGENTS.md — label-follower monorepo
 
 Development guidelines for anyone (human, agent, or tool) working in this repository.
 
-Two projects, one repo (layout borrowed from [shougong](../shougong/DEVELOPMENT.md)):
+Two projects, one repo (layout borrowed from [shougong](../shougong/AGENTS.md)):
 
 - **`backend/`** — the Kotlin / Spring Boot service (plain Spring MVC, single Gradle module). All
   backend commands run from `backend/` (`cd backend && ./gradlew <task>`). Architecture,
-  conventions and rules for evolving it are in [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md) —
+  conventions and rules for evolving it are in [backend/AGENTS.md](backend/AGENTS.md) —
   read that before touching `backend/`. It is deliberately *not* the multi-module Ktor shape of
   the other repos in this family; don't "upgrade" it.
 - **`frontend/`** — the React / Vite SPA. Commands run from `frontend/`
@@ -47,7 +47,7 @@ npm --prefix frontend run dev                                # SPA  -> http://12
 
 The backend reads `MYSQL_HOST`/`MYSQL_USER`/`MYSQL_PASSWORD`; the defaults in
 `application.properties` already match the compose command above (localhost, root, no
-password — see the "Configuration" section of [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md)). A
+password — see the "Configuration" section of [backend/AGENTS.md](backend/AGENTS.md)). A
 root `.env` (gitignored, see `.env.example`) is loaded into `./gradlew bootRun` automatically, so
 secrets do not have to be exported by hand.
 
@@ -69,7 +69,7 @@ root wraps the full stack — the app image plus its own MySQL — for local run
 (`backend/docker-compose.yml` on its own runs just the DB, for a locally-run `./gradlew bootRun`).
 The schema comes from `backend/src/main/resources/db/migration/V*.sql`, applied by Flyway from
 `deploy/entrypoint.sh` before the app starts — see the "Database migrations" section of
-[backend/DEVELOPMENT.md](backend/DEVELOPMENT.md).
+[backend/AGENTS.md](backend/AGENTS.md).
 `.github/workflows/docker-publish.yml` pushes `luiznaac/label-follower:latest` +
 `:v<run-number>` (a sequential build number, `github.run_number`) on master pushes that touch
 `backend/`, `frontend/`, `Dockerfile`, or `deploy/`.

@@ -1,7 +1,7 @@
-# DEVELOPMENT.md — label-follower (backend)
+# AGENTS.md — label-follower (backend)
 
 Development guidelines for anyone (human, agent, or tool) working in `backend/` (the Kotlin/Spring
-service). The repo is a two-project monorepo — see the root [DEVELOPMENT.md](../DEVELOPMENT.md)
+service). The repo is a two-project monorepo — see the root [AGENTS.md](../AGENTS.md)
 for the layout and the one cross-cutting rule, and [frontend/README.md](../frontend/README.md)
 for the SPA. Run backend commands from this directory (`cd backend && ./gradlew <task>`).
 
@@ -16,9 +16,9 @@ already known/stored to find genuinely new releases — then create a Spotify pl
 
 **This is the oldest project in the `luiznaac` personal family and predates the
 `application/gateway/http-api/usecase/persistence` multi-module split used by
-[chameidor](../../chameidor/DEVELOPMENT.md) and [portfolio-2](../../portfolio-2/DEVELOPMENT.md).
+[chameidor](../../chameidor/AGENTS.md) and [portfolio-2](../../portfolio-2/AGENTS.md).
 The repo was given a `backend/` + `frontend/` split to add a web UI (mirroring
-[shougong](../../shougong/DEVELOPMENT.md)), but `backend/` itself is still a single Gradle module
+[shougong](../../shougong/AGENTS.md)), but `backend/` itself is still a single Gradle module
 using plain Spring MVC, not Ktor. Do not restructure it into the multi-module Ktor shape unless
 explicitly asked — that flat single-module layout is an intentional (if dated) characteristic,
 not a bug to fix.**
@@ -161,9 +161,9 @@ even for a small or "obviously safe" change — no exceptions.
 
 ## Related repositories
 
-Same author/family as [chameidor](../../chameidor/DEVELOPMENT.md) and
-[portfolio-2](../../portfolio-2/DEVELOPMENT.md), but architecturally the odd one out — it predates
+Same author/family as [chameidor](../../chameidor/AGENTS.md) and
+[portfolio-2](../../portfolio-2/AGENTS.md), but architecturally the odd one out — it predates
 their Ktor multi-module pattern. Don't port conventions from those two here without being asked;
 equally, don't use this repo's structure as a template for new services in this family. The
 `backend/` + `frontend/` monorepo shape and the frontend stack are borrowed from
-[shougong](../../shougong/DEVELOPMENT.md).
+[shougong](../../shougong/AGENTS.md).
