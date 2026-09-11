@@ -14,7 +14,7 @@ import org.testcontainers.containers.MySQLContainer
 // asks Exposed what would still have to change for the database to match `allTables`. Anything
 // non-empty means someone edited a *Table without writing the migration, or vice versa.
 //
-// Needs a Docker daemon. This is the only test in the repo that does.
+// Needs a Docker daemon (so does OurInfoGatewayImplTest).
 @OptIn(ExperimentalDatabaseMigrationApi::class)
 class MigrationSchemaTest : StringSpec({
 

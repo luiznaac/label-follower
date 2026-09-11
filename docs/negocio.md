@@ -89,17 +89,21 @@ Tela **Consolidar** → **Consolidar todas as gravadoras** (só aparece com a co
 
 ```mermaid
 flowchart TD
-    A[Para cada selo seguido] --> B[Descobre faixas novas<br/>e registra - J2]
+    A[Para cada selo seguido] --> B[Procura faixas novas<br/>sem registrar]
     B --> C{Tem faixa nova?}
     C -- não --> A
     C -- sim --> D[Cria playlist<br/>data-hora + nome do selo]
     D --> E[Adiciona as faixas]
-    E --> A
+    E --> F[(Registra as faixas<br/>como conhecidas)]
+    F --> A
+    D -. falhou .-> G[Selo fica para a<br/>próxima execução]
+    G --> A
 ```
 
 O resultado não volta para a tela: ela só mostra "iniciado / concluído / erro". O detalhamento sai
-no console do backend. Hoje as faixas são registradas **antes** de a playlist ser criada, e se
-qualquer passo falhar elas se perdem — veja [B2](bugs-e-melhorias.md#b2).
+no log do backend. As faixas só passam a "conhecidas" **depois** que a playlist do selo existe. Se algo
+falhar num selo, as faixas dele continuam novas e voltam na próxima execução, e os outros selos
+seguem normalmente ([B2](bugs-e-melhorias.md#b2), corrigido no #20).
 
 ## 5. Regras de negócio
 
@@ -112,7 +116,7 @@ qualquer passo falhar elas se perdem — veja [B2](bugs-e-melhorias.md#b2).
 | <a id="rn-05"></a>RN-05 | **Faixa nova** é uma faixa do catálogo recente cujo ISRC ainda não está vinculado ao selo no banco. | `LabelIntrospector.discoverNewTracksFrom` |
 | <a id="rn-06"></a>RN-06 | **Descobrir** registra o selo (se for novo), seus copyrights e as faixas novas vinculadas a ele. A partir daí elas deixam de ser novas. Na primeira descoberta de um selo, todo o catálogo recente é considerado novo. | idem + `OurInfoGatewayImpl.saveTracks` |
 | <a id="rn-07"></a>RN-07 | **Seguir é implícito**: todo selo registrado no banco é seguido. Não existe, pela interface ou pela API, uma forma de deixar de seguir. | `OurInfoGateway.getLabels` |
-| <a id="rn-08"></a>RN-08 | **Consolidar** percorre todos os selos seguidos; para cada um com faixas novas, cria **uma playlist** chamada `<data-hora ISO-8601 UTC>-<nome do selo>` na conta conectada e adiciona as faixas em lotes de 5. Selos sem novidades não geram playlist. A "notificação" é só um log no console. | `Consolidator`, `SpotifyUserPlaylistGateway` |
+| <a id="rn-08"></a>RN-08 | **Consolidar** percorre todos os selos seguidos; para cada um com faixas novas, cria **uma playlist** chamada `<data-hora ISO-8601 UTC>-<nome do selo>` na conta conectada e adiciona as faixas em lotes de 5. Só **depois** disso as faixas passam a "conhecidas". Selos sem novidades não geram playlist. Se um selo falhar, as faixas dele continuam novas para a próxima execução e os demais selos seguem; ao final, a execução reporta erro listando os selos que falharam. O resultado vai para o log do backend. | `Consolidator`, `SpotifyUserPlaylistGateway` |
 | <a id="rn-09"></a>RN-09 | Existe **uma única conta Spotify conectada**, mantida pelo backend com um refresh token guardado no banco. A conexão pede os escopos `playlist-modify-public` e `playlist-modify-private`. Desconectar apaga a conta guardada. | `SpotifyUserAuth`, `AuthController` |
 | <a id="rn-10"></a>RN-10 | As leituras de catálogo (faixa, álbuns, busca por selo) usam a credencial **do app** (client credentials) e não dependem da conta conectada — Explorar e Descobrir funcionam sem conectar o Spotify. | `SpotifyAuth` |
 | <a id="rn-11"></a>RN-11 | Faixa e selo são N:N (uma faixa pode estar em mais de um selo). ISRC e id do Spotify são únicos no banco: a mesma gravação é registrada uma vez só. | `db/migration/V1__init.sql` |
@@ -122,8 +126,9 @@ qualquer passo falhar elas se perdem — veja [B2](bugs-e-melhorias.md#b2).
 Estas são consequências das regras acima que afetam o resultado para quem usa. Detalhes técnicos e
 correções propostas estão em [bugs-e-melhorias.md](bugs-e-melhorias.md).
 
-- **Faixas perdidas no Consolidar** quando algo falha no meio (conta desconectada, erro do Spotify) —
-  [B2](bugs-e-melhorias.md#b2). Confirmado em teste.
+- **Playlist repetida em caso raro**: se a playlist de um selo for criada mas o registro das faixas
+  falhar, a próxima execução cria outra playlist com as mesmas faixas. É o preço de nunca perder
+  lançamentos. Até o #20, uma falha no meio fazia as faixas sumirem ([B2](bugs-e-melhorias.md#b2)).
 - **Faixas repetidas**: a mesma gravação lançada como single e no álbum aparece duas vezes na lista e
   na playlist — [B6](bugs-e-melhorias.md#b6). Confirmado em teste (9 de 163 faixas num selo real).
 - **Um álbum "estranho" derruba o selo inteiro** (data só com o ano, álbum sem copyright) —

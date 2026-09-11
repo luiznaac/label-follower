@@ -135,8 +135,9 @@ Changing a table:
 
 `config/migration/MigrationSchemaTest.kt` is the guard: it migrates a throwaway Testcontainers
 MySQL to head and asserts `MigrationUtils.statementsRequiredForDatabaseMigration(*allTables)` is
-empty. If a `Table` changes without a matching migration (or vice versa), this test fails. It's
-the only test in the repo that needs a Docker daemon.
+empty. If a `Table` changes without a matching migration (or vice versa), this test fails. It and
+`OurInfoGatewayImplTest` (the persistence gateway against a real, migrated MySQL) are the tests
+that need a Docker daemon.
 
 ## Configuration
 

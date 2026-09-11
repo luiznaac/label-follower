@@ -13,7 +13,7 @@
 | # | Prioridade | Evidência | Problema | Status |
 |---|---|---|---|---|
 | [B1](#b1) | P0 | 🧪 | Imagem Docker não consegue chamar o Spotify (`apiUri` de produção) | ✅ #19 |
-| [B2](#b2) | P0 | 🧪 | Consolidar perde faixas novas quando algo falha | |
+| [B2](#b2) | P0 | 🧪 | Consolidar perde faixas novas quando algo falha | ✅ #20 |
 | [B3](#b3) | P0 | 📖 | Erros HTTP do Spotify são ignorados | ✅ #19 |
 | [B19](#b19) | P0 | 🧪 | Client secret e tokens impressos nos logs | ✅ #19 |
 | [B4](#b4) | P1 | 📖 | Data de lançamento só com ano/mês derruba o selo | |
@@ -48,9 +48,19 @@
   com `baseUrl.toHttpUrl().newBuilder().addPathSegments(...)`, que aceita base com caminho e porta.
   Testes da montagem de URL com MockWebServer.
 
-### <a id="b2"></a>B2 · Consolidar perde faixas novas quando algo falha 🧪
+### <a id="b2"></a>B2 · Consolidar perde faixas novas quando algo falha 🧪 ✅
 
-- **Onde:** `LabelIntrospector.kt:21-23`, `Consolidator.kt:15-19`.
+- **Status:** corrigido no #20.
+  - O `Consolidator` trata um selo por vez: `findNewTracksFrom` (não grava) → cria a playlist →
+    `markAsKnown`.
+  - Uma falha fica restrita ao selo, os outros seguem e as faixas dele continuam novas. A execução
+    termina com `ConsolidationFailedException` listando os selos com falha.
+  - O `OurInfoGatewayImpl.getTracksFrom` deixou de criar o selo como efeito colateral.
+  - Verificado repetindo a reprodução: os vínculos ficaram em 158, e a execução seguinte ainda
+    encontrou as 5 faixas.
+  - Garantia *at-least-once*: se a playlist for criada mas a gravação falhar, a próxima execução cria
+    outra playlist com as mesmas faixas.
+- **Onde (antes da correção):** `LabelIntrospector.kt:21-23`, `Consolidator.kt:15-19`.
 - **O que acontece:** `discoverNewTracksFrom` grava as faixas como conhecidas **antes** de a playlist
   existir, e o `associateWith` do `Consolidator` descobre e grava **todos** os selos antes de criar a
   primeira playlist. Qualquer falha depois (conta não conectada, refresh token revogado, 429/5xx do
@@ -124,8 +134,8 @@ mapeando não encontrado → `404`, erro do Spotify → `502`, sem conta conecta
 padrão de 60 s), com vários selos o navegador recebe `504` enquanto o backend continua. Nada impede duas
 execuções simultâneas (duplo clique, duas abas) → playlists duplicadas e possível violação de chave única
 em `upsertTrack`. **Correção:** execução em segundo plano com trava: `POST` → `202` + id;
-`GET /consolidate/{id}` → status e resumo (selos, faixas por selo, links das playlists). O resumo
-substitui o `println`, e a tela passa a mostrar o resultado.
+`GET /consolidate/{id}` → status e resumo (selos, faixas por selo, links das playlists). O resumo já
+existe no backend desde o #20 (`ConsolidationReport`); falta devolvê-lo à tela.
 
 ### <a id="b9"></a>B9 · Conectar outra conta mistura as duas 📖
 
@@ -183,13 +193,12 @@ nginx ou token no Spring) antes de qualquer outra coisa.
   desliga as regras configuradas no `config.yml`. Evidência: `MagicNumber` está ativo lá, e o `1000` em
   `SpotifyLabelGateway.kt:34` não foi apontado (0 findings em 41 arquivos). Religar num PR próprio,
   corrigindo os findings ou criando um baseline.
-- `println` em vez de SLF4J em `SpotifyAuth` e `Consolidator` (o `RafaHttp` já usa SLF4J desde o #19);
-  Gson em DTOs Kotlin (Jackson + `jackson-module-kotlin` já estão no classpath).
+- `println` em vez de SLF4J em `SpotifyAuth` (o `RafaHttp` e o `Consolidator` já usam SLF4J desde o
+  #19 e o #20); Gson em DTOs Kotlin (Jackson + `jackson-module-kotlin` já estão no classpath).
 - Dependências sem uso: `kotest-extensions-spring:4.4.3` (artefato do Kotest 4 junto com o 5.9),
   `kotlinx-coroutines`, `spring-boot-starter-validation`, `exposed-json`; `profiles/Development.kt` sem uso;
   testes usam `coEvery`/`coVerify` em funções que não são `suspend`.
 - Sem pool de conexões: `Database.connect(url)` abre uma conexão JDBC por transação → HikariCP.
-- `OurInfoGateway.getTracksFrom` é uma leitura que **cria** selo (`upsertLabel`).
 - Chamadas redundantes: a busca por ISRC é feita 2× no backend em `/introspect/*` (+1 pelo `/track` do
   front); lotes de `tracks?ids` com 20 (a API aceita 50).
 - Healthcheck do Docker só olha o nginx (`Dockerfile:69-70`): se a API cair, o container segue "healthy".
@@ -199,8 +208,8 @@ nginx ou token no Spring) antes de qualquer outra coisa.
   `.env.development` é ignorado (usar `loadEnv`).
 - Front: `useDiscoverNewTracks` invalida o catálogo sem necessidade (`queries.ts:34-36`), refazendo ~16
   chamadas ao Spotify; sem testes nem ESLint.
-- Cobertura de testes: nada para `Consolidator`, `Label.matches`, `SpotifyAlbum.toLabel`, filtros de data,
-  `OurInfoGatewayImpl`, `SpotifyUserAuth`, `SpotifyUserPlaylistGateway` e controllers.
+- Cobertura de testes: nada para `Label.matches`, `SpotifyAlbum.toLabel`, filtros de data,
+  `SpotifyUserAuth`, `SpotifyUserPlaylistGateway` e controllers.
 
 ---
 
@@ -213,7 +222,7 @@ correção. Mudança de contrato da API atualiza `frontend/src/api/types.ts` no 
 |---|---|---|---|
 | 1 | Documentação | este diretório `docs/`, docs obsoletas, remoção de `backend/mysql/init.sql` | |
 | 2 | Camada HTTP | B1, B3, B19 | ✅ #19 — MockWebServer; base para testar todos os gateways |
-| 3 | Atomicidade do Consolidar | B2 | testes do `Consolidator` com gateway de playlist falhando |
+| 3 | Atomicidade do Consolidar | B2 | ✅ #20 — testes do `Consolidator` com gateway de playlist falhando |
 | 4 | Robustez do catálogo | B4, B5, B6 | testes com os formatos reais do Spotify |
 | 5 | Erros da API | B7 | `@RestControllerAdvice`; front passa a mostrar a mensagem |
 | 6 | Conta Spotify | B9, B17, B18 | Testcontainers para `SpotifyUserAuth` |
