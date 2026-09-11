@@ -30,7 +30,9 @@ Root `package.json` holds script shims only (`npm run be:run`, `npm run be:check
 `npm run db:migrate`, `npm run db:generate -- -Pname=V2__x`, `npm run fe:dev`, `npm run fe:build`,
 `npm run check`, `npm run up`). It has no dependencies and is
 not a real package. `.pre-commit-config.yaml` lives at the root and scopes hooks by path
-(`^backend/.*\.kt$` → detekt, `^frontend/.*\.(ts|tsx)$` → `tsc` typecheck).
+(`^backend/.*\.kt$` → detekt, `^frontend/.*\.(ts|tsx)$` → `tsc` typecheck). It also carries
+`no-commit-to-branch`, which refuses a commit made while `master` is checked out — the
+"don't commit to master" rule above is enforced here, not merely stated.
 
 `.github/workflows/ci.yml` runs two independent jobs — `backend` (`./gradlew detekt test`) and
 `frontend` (`npm ci && npm run typecheck && npm run build`).
