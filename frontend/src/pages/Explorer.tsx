@@ -1,8 +1,8 @@
 import { useSearchParams } from "react-router-dom";
-import { IsrcInput } from "../components/IsrcInput.tsx";
-import { TrackList } from "../components/TrackList.tsx";
 import { ApiError } from "../api/client.ts";
 import { useDiscoverNewTracks, useLabelCatalog, useTrack } from "../api/queries.ts";
+import { IsrcInput } from "../components/IsrcInput.tsx";
+import { TrackList } from "../components/TrackList.tsx";
 
 export function Explorer() {
   const [params, setParams] = useSearchParams();
@@ -52,6 +52,7 @@ export function Explorer() {
           <section className="space-y-3">
             <div className="flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => discover.mutate(isrc)}
                 disabled={discover.isPending}
                 className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-brand-400 disabled:opacity-40"

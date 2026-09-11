@@ -11,6 +11,7 @@ export function SpotifyConnectButton() {
 
   return (
     <button
+      type="button"
       onClick={connect}
       disabled={pending}
       className="rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-surface-950 transition-colors hover:bg-brand-400 disabled:opacity-50"

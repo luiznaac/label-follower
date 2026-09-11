@@ -1,5 +1,5 @@
-import { SpotifyConnectButton } from "../components/SpotifyConnectButton.tsx";
 import { useConsolidate, useDisconnectSpotify, useSpotifyStatus } from "../api/queries.ts";
+import { SpotifyConnectButton } from "../components/SpotifyConnectButton.tsx";
 
 export function Consolidate() {
   const status = useSpotifyStatus();
@@ -25,6 +25,7 @@ export function Consolidate() {
           <div className="flex items-center gap-3 text-sm">
             <span className="text-brand-400">● Spotify conectado</span>
             <button
+              type="button"
               onClick={() => disconnect.mutate()}
               disabled={disconnect.isPending}
               className="text-neutral-500 hover:text-neutral-300 disabled:opacity-50"
@@ -34,6 +35,7 @@ export function Consolidate() {
           </div>
 
           <button
+            type="button"
             onClick={() => consolidate.mutate()}
             disabled={consolidate.isPending}
             className="rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-surface-950 transition-colors hover:bg-brand-400 disabled:opacity-50"
