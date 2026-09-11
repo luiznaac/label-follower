@@ -28,7 +28,7 @@ export type DiscoverNewTracksResponse = Track[];
  * an EMPTY body: it walks every stored label, creates Spotify playlists, and only logs its
  * progress. No per-label result is returned.
  */
-export type ConsolidateResponse = void;
+export type ConsolidateResponse = undefined;
 
 /** GET /auth/spotify/status */
 export interface SpotifyStatusResponse {
@@ -42,7 +42,7 @@ export interface ExchangeCodeRequest {
 }
 
 /** DELETE /auth/spotify */
-export type DisconnectSpotifyResponse = void;
+export type DisconnectSpotifyResponse = undefined;
 
 // `Label` (backend models/Label.kt) is never serialized by any endpoint, so it is
 // intentionally not mirrored here.

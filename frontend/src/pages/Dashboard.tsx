@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { StatTile } from "../components/StatTile.tsx";
 import { useSpotifyStatus } from "../api/queries.ts";
+import { StatTile } from "../components/StatTile.tsx";
 
 export function Dashboard() {
   const status = useSpotifyStatus();
@@ -11,8 +11,8 @@ export function Dashboard() {
       <section className="space-y-2">
         <h1 className="text-2xl font-semibold text-neutral-100">label-follower</h1>
         <p className="max-w-prose text-sm text-neutral-400">
-          Acompanhe as gravadoras que você segue no Spotify. Parta de uma faixa, descubra qual
-          selo a lançou, veja o catálogo recente e encontre os lançamentos que ainda não estavam
+          Acompanhe as gravadoras que você segue no Spotify. Parta de uma faixa, descubra qual selo
+          a lançou, veja o catálogo recente e encontre os lançamentos que ainda não estavam
           registrados — depois monte uma playlist com tudo que é novo.
         </p>
       </section>

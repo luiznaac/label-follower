@@ -65,17 +65,17 @@ export const api = {
    * no token to pass here anymore.
    */
   consolidate(): Promise<ConsolidateResponse> {
-    return request(`/consolidate`, { method: "POST" });
+    return request("/consolidate", { method: "POST" });
   },
 
   /** GET /auth/spotify/status */
   getSpotifyStatus(): Promise<SpotifyStatusResponse> {
-    return request(`/auth/spotify/status`);
+    return request("/auth/spotify/status");
   },
 
   /** POST /auth/spotify/exchange — trades the OAuth `code` for a permanent backend login. */
   exchangeSpotifyCode(body: ExchangeCodeRequest): Promise<void> {
-    return request(`/auth/spotify/exchange`, {
+    return request("/auth/spotify/exchange", {
       method: "POST",
       body: JSON.stringify(body),
     });
@@ -83,6 +83,6 @@ export const api = {
 
   /** DELETE /auth/spotify — forgets the backend's stored Spotify login. */
   disconnectSpotify(): Promise<DisconnectSpotifyResponse> {
-    return request(`/auth/spotify`, { method: "DELETE" });
+    return request("/auth/spotify", { method: "DELETE" });
   },
 };

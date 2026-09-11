@@ -30,15 +30,19 @@ export function SpotifyCallback() {
       .mutateAsync({ code, redirectUri: SPOTIFY_REDIRECT_URI })
       .then(() => navigate("/consolidate", { replace: true }))
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "Falha ao conectar."));
-    // exchange is a fresh mutation object each render; only re-run this effect on navigation change.
-  }, [navigate]);
+    // exchange is a fresh mutation object each render, so this dep is not stable — the guard
+    // above is what actually keeps the exchange to a single run.
+  }, [navigate, exchange]);
 
   return (
     <div className="grid min-h-screen place-items-center px-4">
       {error ? (
         <div className="space-y-3 text-center">
           <p className="text-sm text-red-400">{error}</p>
-          <a href={`${import.meta.env.BASE_URL}consolidate`} className="text-sm text-brand-400 hover:underline">
+          <a
+            href={`${import.meta.env.BASE_URL}consolidate`}
+            className="text-sm text-brand-400 hover:underline"
+          >
             Voltar e tentar novamente
           </a>
         </div>

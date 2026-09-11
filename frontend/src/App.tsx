@@ -1,8 +1,8 @@
 import type { RouteObject } from "react-router-dom";
 import { Layout } from "./components/Layout.tsx";
+import { Consolidate } from "./pages/Consolidate.tsx";
 import { Dashboard } from "./pages/Dashboard.tsx";
 import { Explorer } from "./pages/Explorer.tsx";
-import { Consolidate } from "./pages/Consolidate.tsx";
 import { SpotifyCallback } from "./pages/SpotifyCallback.tsx";
 
 export const routes: RouteObject[] = [
