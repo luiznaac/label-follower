@@ -4,3 +4,6 @@ Dockerfile      text eol=lf
 deploy/**       text eol=lf
 gradlew         text eol=lf
 *.bat           text eol=crlf
+
+# Biome enforces LF; without this Windows checkouts get CRLF and `npm run check` fails.
+frontend/**     text eol=lf
