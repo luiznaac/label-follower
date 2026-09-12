@@ -156,9 +156,6 @@ imperative/gerund (`"Persisting tracks to txt"`, `"Fixing tests"`), merged via n
 (see "Configuration"); harmless, kept for old checkouts, no longer relevant to how the app
 persists data.
 
-**Do not commit directly to `master`.** Always create a feature branch and open a PR,
-even for a small or "obviously safe" change — no exceptions.
-
 ## Related repositories
 
 Same author/family as [chameidor](../../chameidor/AGENTS.md) and

@@ -19,11 +19,6 @@ Two projects, one repo (layout borrowed from [shougong](../shougong/AGENTS.md)):
 controllers in `backend/.../api/` return. Any change to a request/response shape on one side must
 update the other in the same commit. There is no codegen.
 
-## Git workflow
-
-**Do not commit directly to `master`.** Always create a feature branch and open a PR,
-even for a small or "obviously safe" change. This applies to all contributors.
-
 ## Tooling
 
 Root `package.json` holds script shims only (`npm run be:run`, `npm run be:check`,
@@ -31,8 +26,8 @@ Root `package.json` holds script shims only (`npm run be:run`, `npm run be:check
 `npm run check`, `npm run up`). It has no dependencies and is
 not a real package. `.pre-commit-config.yaml` lives at the root and scopes hooks by path
 (`^backend/.*\.kt$` → detekt, `^frontend/.*\.(ts|tsx)$` → `tsc` typecheck). It also carries
-`no-commit-to-branch`, which refuses a commit made while `master` is checked out — the
-"don't commit to master" rule above is enforced here, not merely stated.
+`no-commit-to-branch` — the git/PR conventions are enforced there, not merely stated
+(see `salgadinhos/global/AGENTS.md`).
 
 `.github/workflows/ci.yml` runs two independent jobs — `backend` (`./gradlew detekt test`) and
 `frontend` (`npm ci && npm run typecheck && npm run build`).
