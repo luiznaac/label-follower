@@ -32,7 +32,4 @@ matching is exact and rejects `http://localhost` — don't "simplify" this to `l
 - **`components/IsrcInput.tsx`/`TrackList.tsx`** are the core consolidation-flow UI;
   `SpotifyConnectButton.tsx` kicks off the PKCE flow.
 
-## Git
-
-**Do not commit directly to `master`.** Always create a feature branch and open a PR, even for a
-small or "obviously safe" change. This applies to all contributors.
+Git/PR conventions: see `salgadinhos/global/AGENTS.md`.
