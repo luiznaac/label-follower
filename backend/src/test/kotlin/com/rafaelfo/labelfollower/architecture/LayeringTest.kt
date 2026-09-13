@@ -30,4 +30,27 @@ class LayeringTest :
                     file.imports.any { it.name.contains("Spotify") }
                 }
         }
+
+        "models must not import integrations" {
+            Konsist
+                .scopeFromProject()
+                .files
+                .withPackage("com.rafaelfo.labelfollower.models..")
+                .assertFalse { file ->
+                    file.imports.any { it.name.startsWith("com.rafaelfo.labelfollower.integrations") }
+                }
+        }
+
+        "models must not import framework or vendor packages" {
+            Konsist
+                .scopeFromProject()
+                .files
+                .withPackage("com.rafaelfo.labelfollower.models..")
+                .assertFalse { file ->
+                    file.imports.any { import ->
+                        listOf("org.springframework", "org.jetbrains.exposed", "okhttp3", "com.google.gson")
+                            .any { import.name.startsWith(it) }
+                    }
+                }
+        }
     })

@@ -10,12 +10,11 @@ data class Label(
 
     fun matches(label: Label): Boolean {
         val copyrightMatch =
-            copyrights.flatMap { thisCopyright ->
-                label.copyrights.map { otherCopyright ->
-                    thisCopyright matches otherCopyright
+            copyrights.isEmpty() ||
+                label.copyrights.isEmpty() ||
+                copyrights.any { thisCopyright ->
+                    label.copyrights.any { otherCopyright -> thisCopyright matches otherCopyright }
                 }
-            }
-                .reduce { acc, b -> acc || b }
 
         return name == label.name && copyrightMatch
     }
