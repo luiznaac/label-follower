@@ -6,6 +6,7 @@ import com.rafaelfo.labelfollower.usecases.ExternalInfoGateway
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -54,8 +55,8 @@ private const val YEAR_MONTH_LENGTH = 7
 
 private fun String.parseUTC(): Instant {
     val paddedDate = when (length) {
-        YEAR_LENGTH -> "$this-01-01"
-        YEAR_MONTH_LENGTH -> "$this-01"
+        YEAR_LENGTH -> "$this-12-31"
+        YEAR_MONTH_LENGTH -> YearMonth.parse(this).atEndOfMonth().toString()
         else -> this
     }
     val localDate = LocalDate.from(

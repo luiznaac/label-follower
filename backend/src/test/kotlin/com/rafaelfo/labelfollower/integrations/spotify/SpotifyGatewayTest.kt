@@ -54,7 +54,10 @@ class SpotifyGatewayTest : StringSpec({
     }
 
     "should include only releases strictly after the cutoff date" {
-        val track = spotifyTrack(id = "track-3")
+        val track3 = spotifyTrack(id = "track-3")
+        val track4 = spotifyTrack(id = "track-4")
+        val track5 = spotifyTrack(id = "track-5")
+        val track6 = spotifyTrack(id = "track-6")
         val albums = setOf(
             spotifyAlbum(
                 id = "album-1",
@@ -66,22 +69,41 @@ class SpotifyGatewayTest : StringSpec({
                 releaseDate = "2021-11-01",
                 tracks = listOf(spotifyTrack(id = "track-2")),
             ),
-            spotifyAlbum(id = "album-3", releaseDate = "2021-11-02", tracks = listOf(track)),
+            spotifyAlbum(id = "album-3", releaseDate = "2021-11-02", tracks = listOf(track3)),
+            spotifyAlbum(id = "album-4", releaseDate = "2021", tracks = listOf(track4)),
+            spotifyAlbum(id = "album-5", releaseDate = "2021-11", tracks = listOf(track5)),
+            spotifyAlbum(id = "album-6", releaseDate = "2021-12", tracks = listOf(track6)),
+            spotifyAlbum(
+                id = "album-7",
+                releaseDate = "2021-10",
+                tracks = listOf(spotifyTrack(id = "track-7")),
+            ),
         )
 
         every { spotifyLabelGateway.findAlbumsBy(requestedLabel) } returns setOf(
             spotifyAlbum(id = "album-1", releaseDate = "2021-10-31"),
             spotifyAlbum(id = "album-2", releaseDate = "2021-11-01"),
             spotifyAlbum(id = "album-3", releaseDate = "2021-11-02"),
+            spotifyAlbum(id = "album-4", releaseDate = "2021"),
+            spotifyAlbum(id = "album-5", releaseDate = "2021-11"),
+            spotifyAlbum(id = "album-6", releaseDate = "2021-12"),
+            spotifyAlbum(id = "album-7", releaseDate = "2021-10"),
         )
         every {
-            spotifyAlbumGateway.findAlbumsById(setOf("album-1", "album-2", "album-3"))
+            spotifyAlbumGateway.findAlbumsById(
+                setOf("album-1", "album-2", "album-3", "album-4", "album-5", "album-6", "album-7")
+            )
         } returns albums
-        every { spotifyTrackGateway.findTracksById(setOf("track-3")) } returns setOf(track)
+        every {
+            spotifyTrackGateway.findTracksById(setOf("track-3", "track-4", "track-5", "track-6"))
+        } returns setOf(track3, track4, track5, track6)
 
-        gateway.getTracksFrom(requestedLabel) shouldBe setOf(track.toTrack())
+        gateway.getTracksFrom(requestedLabel) shouldBe
+            setOf(track3.toTrack(), track4.toTrack(), track5.toTrack(), track6.toTrack())
 
-        verify(exactly = 1) { spotifyTrackGateway.findTracksById(setOf("track-3")) }
+        verify(exactly = 1) {
+            spotifyTrackGateway.findTracksById(setOf("track-3", "track-4", "track-5", "track-6"))
+        }
     }
 
     "should drop albums whose label does not match the requested label" {
