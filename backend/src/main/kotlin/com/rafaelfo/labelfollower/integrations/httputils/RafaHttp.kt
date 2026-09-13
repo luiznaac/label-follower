@@ -41,16 +41,7 @@ class RafaHttp {
         headers: Map<String, String>,
         queryParameters: Map<String, String> = emptyMap(),
     ): Response {
-        val (scheme, host) = url.split("://")
-        val requestUrl = HttpUrl.Builder().run {
-            scheme(scheme)
-            host(host)
-            addPathSegments(path)
-            queryParameters.forEach {
-                addQueryParameter(it.key, it.value)
-            }
-            build()
-        }
+        val requestUrl = buildRequestUrl(url, path, queryParameters)
 
         val request = Request.Builder().run {
             url(requestUrl)
@@ -62,6 +53,19 @@ class RafaHttp {
         }
 
         return request.execute()
+    }
+}
+
+internal fun buildRequestUrl(url: String, path: String, queryParameters: Map<String, String>): HttpUrl {
+    val (scheme, host) = url.split("://")
+    return HttpUrl.Builder().run {
+        scheme(scheme)
+        host(host)
+        addPathSegments(path)
+        queryParameters.forEach {
+            addQueryParameter(it.key, it.value)
+        }
+        build()
     }
 }
 
