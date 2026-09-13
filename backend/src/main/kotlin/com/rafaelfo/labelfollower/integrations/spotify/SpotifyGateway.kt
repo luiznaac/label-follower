@@ -49,9 +49,17 @@ private fun Instant.isAfter(releaseDate: String): Boolean {
     return releaseDate.parseUTC().isAfter(this)
 }
 
+private const val YEAR_LENGTH = 4
+private const val YEAR_MONTH_LENGTH = 7
+
 private fun String.parseUTC(): Instant {
+    val paddedDate = when (length) {
+        YEAR_LENGTH -> "$this-01-01"
+        YEAR_MONTH_LENGTH -> "$this-01"
+        else -> this
+    }
     val localDate = LocalDate.from(
-        DateTimeFormatter.ISO_LOCAL_DATE.parse(this)
+        DateTimeFormatter.ISO_LOCAL_DATE.parse(paddedDate)
     )
     val zonedDateTime = ZonedDateTime.of(localDate.atTime(0, 0), ZoneOffset.UTC)
     return Instant.from(zonedDateTime)
