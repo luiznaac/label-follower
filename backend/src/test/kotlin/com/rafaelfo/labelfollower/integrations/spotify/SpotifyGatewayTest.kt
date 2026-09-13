@@ -8,12 +8,14 @@ import com.rafaelfo.labelfollower.integrations.spotify.models.SpotifyTrack
 import com.rafaelfo.labelfollower.integrations.spotify.responses.TrackItems
 import com.rafaelfo.labelfollower.models.Label
 import com.rafaelfo.labelfollower.models.Track
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.format.DateTimeParseException
 
 class SpotifyGatewayTest : StringSpec({
 
@@ -103,6 +105,32 @@ class SpotifyGatewayTest : StringSpec({
 
         verify(exactly = 1) {
             spotifyTrackGateway.findTracksById(setOf("track-3", "track-4", "track-5", "track-6"))
+        }
+    }
+
+    "should throw when an album has a malformed release date" {
+        val album = spotifyAlbum(id = "album-1", releaseDate = "not-a-date")
+
+        every { spotifyLabelGateway.findAlbumsBy(requestedLabel) } returns setOf(
+            spotifyAlbum(id = "album-1", releaseDate = "not-a-date"),
+        )
+        every { spotifyAlbumGateway.findAlbumsById(setOf("album-1")) } returns setOf(album)
+
+        shouldThrow<DateTimeParseException> {
+            gateway.getTracksFrom(requestedLabel)
+        }
+    }
+
+    "should throw when an album has an invalid year-month release date" {
+        val album = spotifyAlbum(id = "album-1", releaseDate = "2021-13")
+
+        every { spotifyLabelGateway.findAlbumsBy(requestedLabel) } returns setOf(
+            spotifyAlbum(id = "album-1", releaseDate = "2021-13"),
+        )
+        every { spotifyAlbumGateway.findAlbumsById(setOf("album-1")) } returns setOf(album)
+
+        shouldThrow<DateTimeParseException> {
+            gateway.getTracksFrom(requestedLabel)
         }
     }
 
