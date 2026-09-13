@@ -6,6 +6,7 @@ import com.rafaelfo.labelfollower.usecases.ExternalInfoGateway
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -49,9 +50,17 @@ private fun Instant.isAfter(releaseDate: String): Boolean {
     return releaseDate.parseUTC().isAfter(this)
 }
 
+private const val YEAR_LENGTH = 4
+private const val YEAR_MONTH_LENGTH = 7
+
 private fun String.parseUTC(): Instant {
+    val paddedDate = when (length) {
+        YEAR_LENGTH -> "$this-12-31"
+        YEAR_MONTH_LENGTH -> YearMonth.parse(this).atEndOfMonth().toString()
+        else -> this
+    }
     val localDate = LocalDate.from(
-        DateTimeFormatter.ISO_LOCAL_DATE.parse(this)
+        DateTimeFormatter.ISO_LOCAL_DATE.parse(paddedDate)
     )
     val zonedDateTime = ZonedDateTime.of(localDate.atTime(0, 0), ZoneOffset.UTC)
     return Instant.from(zonedDateTime)
