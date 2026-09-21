@@ -33,6 +33,12 @@ The SPA always calls `/api/*`; the Vite dev server proxies that to the backend a
 
 Spotify user auth for `POST /consolidate` happens entirely in the browser (Authorization Code + PKCE, `frontend/src/lib/spotifyAuth.ts`). The backend still only does client-credentials for its own reads. The Spotify app needs the dev redirect URI `http://127.0.0.1:5274/callback` registered (Spotify rejects `http://localhost`).
 
+## Config & secrets
+
+Env vars: `SPOTIFY_CLIENT_SECRET` (required, no default) and the optional `MYSQL_HOST` / `MYSQL_USER` / `MYSQL_PASSWORD` (dev defaults `localhost` / `root` / empty, in `application.properties`). The gitignored `.env` supplies them locally — `build.gradle.kts` loads it into `bootRun` — and its versioned [`.env.example`](.env.example) is the reference for each var and its fixture.
+
+There is no `dev-*` fixture here: Spotify rejects a fake client secret, so dev needs a real value. The single secrets doc is `docs/salgadinhos/secrets.md` in the salgadinhos repo.
+
 ## Docker
 
 One image (repo-root `Dockerfile`, multi-stage) ships backend + frontend together: `supervisord` runs the Spring Boot jar (`API_PORT`/8080) and `nginx` (`deploy/nginx.conf.template` — serves the built SPA on `WEB_PORT`/8081 and reverse-proxies `/api` → the jar). `docker-compose.yml` at the root wraps the full stack — the app image plus its own MySQL — for local runs (`backend/docker-compose.yml` on its own runs just the DB, for a locally-run `./gradlew bootRun`). The schema comes from `backend/src/main/resources/db/migration/V*.sql`, applied by Flyway from `deploy/entrypoint.sh` before the app starts — see the "Database migrations" section of [backend/AGENTS.md](backend/AGENTS.md). `.github/workflows/docker-publish.yml` pushes `luiznaac/label-follower:latest` + `:v<run-number>` (a sequential build number, `github.run_number`) on master pushes that touch `backend/`, `frontend/`, `Dockerfile`, or `deploy/`.
