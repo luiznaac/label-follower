@@ -1,9 +1,9 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: no-commit-to-branch
-        args: [--branch, master]
+        args: [--branch, master, --branch, main]
 
   - repo: local
     hooks:
@@ -18,4 +18,16 @@ repos:
         entry: sh -c 'cd frontend && npm run typecheck'
         language: system
         files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+      - id: test-backend
+        name: test (backend)
+        entry: sh -c 'cd backend && ./gradlew test'
+        language: system
+        files: ^backend/.*\.(kt|kts)$
+        pass_filenames: false
+      - id: test-frontend
+        name: test (frontend)
+        entry: sh -c 'cd frontend && npm test'
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx|mjs|cjs)$
         pass_filenames: false
