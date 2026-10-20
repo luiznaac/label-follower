@@ -43,7 +43,8 @@ The `Bearer` token for `/consolidate` is a **Spotify user access token**; the fr
 ```bash
 cd backend
 ./gradlew build
-./gradlew test
+./gradlew unitTest --no-daemon   # Docker-free lane
+./gradlew test --no-daemon       # full suite, needs Docker
 ./gradlew detekt
 ```
 

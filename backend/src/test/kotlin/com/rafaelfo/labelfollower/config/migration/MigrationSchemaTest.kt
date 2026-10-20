@@ -1,12 +1,14 @@
 package com.rafaelfo.labelfollower.config.migration
 
 import com.rafaelfo.labelfollower.integrations.database.allTables
+import io.kotest.core.annotation.Tags
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import org.jetbrains.exposed.v1.core.ExperimentalDatabaseMigrationApi
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.migration.jdbc.MigrationUtils
+import org.junit.jupiter.api.Tag
 import org.testcontainers.containers.MySQLContainer
 
 // The guard that keeps db/migration/ and the Exposed tables from drifting apart — the failure
@@ -14,7 +16,14 @@ import org.testcontainers.containers.MySQLContainer
 // asks Exposed what would still have to change for the database to match `allTables`. Anything
 // non-empty means someone edited a *Table without writing the migration, or vice versa.
 //
-// Needs a Docker daemon. This is the only test in the repo that does.
+// Needs a Docker daemon. This is the only test in the repo that does, so it carries the
+// `integration` tag: `./gradlew unitTest` excludes it and never touches Docker, while
+// `./gradlew test` runs it after `dockerPreflight` has confirmed the daemon is reachable.
+//
+// Both markers are needed: Kotest 5.9 filters on its own `@Tags`, and the JUnit `@Tag` is the
+// platform-level convention Gradle's `excludeTags` understands (Kotest 5.9 does not read it).
+@Tag("integration")
+@Tags("integration")
 @OptIn(ExperimentalDatabaseMigrationApi::class)
 class MigrationSchemaTest : StringSpec({
 
