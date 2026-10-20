@@ -48,11 +48,23 @@ Run `./gradlew detekt` before finishing a change.
 
 ## Testing
 
-Kotest (`kotest-runner-junit5`, `kotest-extensions-spring`), MockK. Tests live in `src/test/kotlin/com/rafaelfo/labelfollower/...`, mirroring the main package layout. Existing tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.kt`, `TrackFinderTest.kt`.
+Kotest (`kotest-runner-junit5`, `kotest-extensions-spring`), MockK. Test source roots:
+
+- `src/test/kotlin/com/rafaelfo/labelfollower/...` — every spec, **mirroring the main package layout**: a spec for `foo/Bar.kt` lives at `src/test/kotlin/foo/BarTest.kt`, in the same package.
+- `src/test/resources/` — fixtures read from the test classpath (e.g. `mysql-test-conf/my.cnf` for the Testcontainers MySQL).
+
+Search for an existing spec and an existing fixture **before creating a new one** — a near-duplicate spec is the usual miss.
+
+Two lanes:
 
 ```bash
-./gradlew test
+./gradlew unitTest --no-daemon   # Docker-free lane — the pre-commit hook runs this
+./gradlew test --no-daemon       # every spec, Docker-backed ones included (the CI lane)
 ```
+
+`unitTest` is a `Test` task over the same source set with the `integration` tag excluded. That tag is the convention for any spec that needs a Docker daemon: `MigrationSchemaTest` carries it today, as `@Tag("integration")` plus Kotest's `@Tags("integration")` — Kotest 5.9 filters on its own annotation and does not read the JUnit one. `test` still runs everything and depends on `dockerPreflight`, which probes `docker info` (30s limit) and fails in seconds — CLI missing, non-zero exit (a permission-denied socket included) or no return within 30s — with a message naming the Docker-free lane, instead of leaving an opaque `DockerClientProviderStrategy` error in the HTML report.
+
+Existing tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.kt`, `TrackFinderTest.kt`.
 
 ## Database migrations
 
@@ -67,7 +79,7 @@ Changing a table:
 2. Point `MYSQL_HOST`/`MYSQL_USER`/`MYSQL_PASSWORD` at a database already migrated to head, then `./gradlew generateMigrationScript -Pname=V2__add_something` (or `npm run db:generate -- -Pname=V2__add_something` from the repo root). Review the generated `.sql` before committing — the diff is mechanical and won't know a rename is a rename rather than a drop-and-add.
 3. `./gradlew migrate` (or `npm run db:migrate`) to apply it locally.
 
-`config/migration/MigrationSchemaTest.kt` is the guard: it migrates a throwaway Testcontainers MySQL to head and asserts `MigrationUtils.statementsRequiredForDatabaseMigration(*allTables)` is empty. If a `Table` changes without a matching migration (or vice versa), this test fails. It's the only test in the repo that needs a Docker daemon.
+`config/migration/MigrationSchemaTest.kt` is the guard: it migrates a throwaway Testcontainers MySQL to head and asserts `MigrationUtils.statementsRequiredForDatabaseMigration(*allTables)` is empty. If a `Table` changes without a matching migration (or vice versa), this test fails. It's the only test in the repo that needs a Docker daemon, so it carries the `integration` tag (see "Testing") and only the `test` lane runs it — `unitTest` needs no Docker.
 
 ## Configuration
 
@@ -84,8 +96,9 @@ Changing a table:
 
 ```bash
 ./gradlew build
-./gradlew test
-./gradlew dependencyUpdates   # CSV report in build/dependencyUpdates/report — check before bumping deps by hand
+./gradlew unitTest --no-daemon   # Docker-free lane
+./gradlew test --no-daemon       # full suite, needs Docker
+./gradlew dependencyUpdates      # CSV report in build/dependencyUpdates/report — check before bumping deps by hand
 ```
 
 ## Git

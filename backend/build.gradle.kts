@@ -2,6 +2,8 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import io.gitlab.arturbosch.detekt.Detekt
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
+import java.util.concurrent.TimeUnit
 
 plugins {
     id("org.springframework.boot") version "3.5.7"
@@ -92,6 +94,88 @@ tasks.withType<KotlinCompile> {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// The Docker-free verification lane. The pre-commit hook runs this: specs tagged `integration`
+// (currently just MigrationSchemaTest) are excluded, so committing never needs a Docker daemon.
+// `test` is unchanged and still runs everything — that is the CI lane, where Docker is present.
+val unitTest by tasks.registering(Test::class) {
+    group = "verification"
+    description = "Runs the test source set with `integration`-tagged specs excluded — no Docker needed."
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    dependsOn(tasks.named("testClasses"))
+    useJUnitPlatform {
+        excludeTags("integration")
+    }
+    // Kotest 5.9 filters on its own `@Tags`, not on the JUnit platform tags `excludeTags` reads,
+    // so the same marker has to be honoured through Kotest's tag expression as well.
+    systemProperty("kotest.tags", "!integration")
+}
+
+// Testcontainers only discovers an unreachable daemon once MigrationSchemaTest starts its first
+// container, which surfaces as an opaque DockerClientProviderStrategy error buried in the HTML
+// report. Probe the daemon first so the full lane fails in seconds with a message that says what
+// to do — including the Docker-free lane that never needs it.
+val dockerPreflight by tasks.registering {
+    group = "verification"
+    description = "Fails fast, with an actionable message, when the Docker daemon is unavailable."
+
+    doLast {
+        fun failDockerUnavailable(reason: String, detail: String = "", cause: Throwable? = null): Nothing =
+            throw GradleException(
+                """
+                The full test suite needs $reason
+                Make Docker available and retry, or run the Docker-free lane: ./gradlew unitTest --no-daemon
+                $detail
+                """.trimIndent(),
+                cause,
+            )
+
+        // Drain to a file rather than a pipe: a noisy `docker info` that filled the pipe buffer
+        // would block the child and turn a healthy daemon into a false 30s timeout.
+        val outputFile = File.createTempFile("docker-preflight", ".log")
+        try {
+            val process = try {
+                ProcessBuilder("docker", "info")
+                    .redirectErrorStream(true)
+                    .redirectOutput(outputFile)
+                    .start()
+            } catch (exception: java.io.IOException) {
+                failDockerUnavailable("Docker, but the `docker` CLI is not on PATH.", cause = exception)
+            }
+            // A wedged daemon would otherwise hang the preflight itself — the failure mode this
+            // task exists to cut short.
+            val finished = process.waitFor(30, TimeUnit.SECONDS)
+            if (!finished) {
+                process.destroyForcibly()
+                process.waitFor(5, TimeUnit.SECONDS)
+            }
+            val output = outputFile.readText()
+            val exitCode = if (finished) process.exitValue() else null
+            if (exitCode != 0) {
+                val detail = output.lines()
+                    .filter { it.contains("error", ignoreCase = true) }
+                    .take(3)
+                    .ifEmpty { output.trim().lines().takeLast(3) }
+                    .joinToString("\n")
+                failDockerUnavailable(
+                    reason = if (exitCode == null) {
+                        "a running Docker daemon, but `docker info` did not return in 30s."
+                    } else {
+                        "a running Docker daemon, but `docker info` exited $exitCode."
+                    },
+                    detail = detail,
+                )
+            }
+        } finally {
+            outputFile.delete()
+        }
+    }
+}
+
+tasks.test {
+    dependsOn(dockerPreflight)
 }
 
 // Only ship the executable Spring Boot jar — skip the extra `-plain.jar`.
