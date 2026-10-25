@@ -2,6 +2,10 @@
 
 Development guidelines for anyone (human, agent, or tool) working in `backend/` (the Kotlin/Spring service). The repo is a two-project monorepo — see the root [AGENTS.md](../AGENTS.md) for the layout and the one cross-cutting rule, and [frontend/README.md](../frontend/README.md) for the SPA. Run backend commands from this directory (`cd backend && ./gradlew <task>`).
 
+## Code map
+
+- [`docs/code-map.md`](docs/code-map.md)
+
 ## What this service does
 
 label-follower discovers new tracks from record labels the user follows on Spotify and builds a playlist out of them. Given a track (identified by ISRC), it can find which label released it, "introspect" that label to see what other tracks it has released, and diff those against tracks already known/stored to find genuinely new releases — then create a Spotify playlist with them.
