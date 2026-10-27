@@ -50,6 +50,10 @@ Detekt 1.23.6 + `detekt-formatting`, split `config/detekt/config.yml` + `format.
 
 Run `./gradlew detekt` before finishing a change.
 
+## Coding standards
+
+- [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — "the language-idiom rules the tooling does not enforce"
+
 ## Testing
 
 Kotest (`kotest-runner-junit5`, `kotest-extensions-spring`), MockK. Test source roots:

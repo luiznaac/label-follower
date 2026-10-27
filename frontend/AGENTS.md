@@ -15,6 +15,10 @@ npm run check         # typecheck + Biome + Vitest — run this before opening a
 npm run build         # tsc -b && vite build
 ```
 
+## Coding standards
+
+- [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — "the language-idiom rules the tooling does not enforce"
+
 ## Spotify auth starts in the browser and finishes on the backend
 
 `POST /consolidate` uses a Spotify login the backend holds. `src/lib/spotifyAuth.ts` only sends the browser to Spotify's consent screen; `pages/SpotifyCallback.tsx` receives the `code` and posts it to `POST /auth/spotify/exchange`, where the backend trades it for a permanent login. The browser never stores a token. The dev server binds `127.0.0.1` specifically (not `localhost`) because Spotify's redirect-URI matching is exact and rejects `http://localhost` — don't "simplify" this to `localhost`.
