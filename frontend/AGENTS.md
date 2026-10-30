@@ -35,4 +35,8 @@ node <salgadinhos>/adapters/sandbox/run.mjs --stack node --workspace <repo-root>
 - **Port 5274**, not 5273 (shougong's default) — chosen so both dev servers can run at once. Keep them distinct if you copy this scaffold's `vite.config.ts` pattern elsewhere.
 - **`components/IsrcInput.tsx`/`TrackList.tsx`** are the core consolidation-flow UI; `SpotifyConnectButton.tsx` kicks off the PKCE flow.
 
+## Coding standards
+
+- [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — "the language-idiom rules the tooling does not enforce"
+
 Git/PR conventions: see `salgadinhos/global/AGENTS.md`.
