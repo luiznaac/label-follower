@@ -95,10 +95,13 @@ Changing a table:
 
 | Key | Notes |
 |---|---|
+| `server.port` | `${KTOR_PORT:8120}` — 8120 is label-follower's `api` host port (see the root README's port table); the container overrides it with `--server.port=${API_PORT}`/8080 |
 | `spotify.clientId` | Spotify app client ID (not secret, safe to commit) |
 | `spotify.clientSecret` | `${SPOTIFY_CLIENT_SECRET}` — must be set as an env var, never hardcode a real value |
 | `spotify.authUri` / `spotify.apiUri` | Spotify OAuth token endpoint and API base URL |
-| `mysql.host` / `mysql.user` / `mysql.password` | required in production; the dev file defaults to `localhost`/`root`/empty, matching `backend/docker-compose.yml up -d mysql` |
+| `mysql.host` / `mysql.port` / `mysql.user` / `mysql.password` | host/user/password are required in production; the dev file defaults to `localhost`/`8122`/`root`/empty, matching `backend/docker-compose.yml up -d mysql` — 8122 is the block's `mysql` host port. The `-production` profile defaults the port to the fixed internal `3306` instead |
+
+The four host ports the project owns (api `8120`, web `8121`, mysql `8122`, frontend-dev `8123`) are recorded in [`.salgadinhos/ports.json`](../.salgadinhos/ports.json); `MysqlEnv.fromEnvironment()` in the migration path reads `MYSQL_PORT` with the same `8122` fallback.
 
 ## Build & maintenance
 

@@ -1,9 +1,13 @@
 # Full stack in one command: the combined app image (Spring Boot backend + built
 # SPA, from ./Dockerfile) plus its MySQL, fronted by nginx.
 #
-#   docker compose up --build                                   # everything -> http://localhost:8081
+#   docker compose up --build                                   # everything -> http://localhost:8121
 #   docker compose -f backend/docker-compose.yml up -d mysql     # just the DB
 #     (for local `cd backend` + IntelliJ run + `cd frontend && npm run dev`)
+#
+# The published ports are this project's slice of the family port block (see
+# README's table and .salgadinhos/ports.json): api 8120, web 8121, mysql 8122.
+# Container-internal ports stay fixed (8080 / 8081 / 3306).
 
 services:
   mysql:
@@ -13,7 +17,7 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
       - MYSQL_DATABASE=labelfollower
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-8122}:3306"
     volumes:
       - label-follower-mysql-data:/var/lib/mysql
     healthcheck:
@@ -34,14 +38,15 @@ services:
     environment:
       - API_PORT=8080
       - WEB_PORT=8081
+      - MYSQL_PORT=3306 # fixed internal port; the host side comes from the mapping below
       - SPRING_PROFILES_ACTIVE=production
       - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET:?set SPOTIFY_CLIENT_SECRET}
       - MYSQL_HOST=mysql
       - MYSQL_USER=root
       - MYSQL_PASSWORD=
     ports:
-      - "8080:8080" # API  (Spring Boot)
-      - "8081:8081" # web  (nginx: SPA + /api proxy)
+      - "${KTOR_PORT:-8120}:8080" # API  (Spring Boot)
+      - "${WEB_HOST_PORT:-8121}:8081" # web  (nginx: SPA + /api proxy)
 
 volumes:
   label-follower-mysql-data:

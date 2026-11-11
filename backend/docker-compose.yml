@@ -1,5 +1,6 @@
 # DB-only compose file for local dev: run just MySQL and point a locally-run
-# `./gradlew bootRun` at it.
+# `./gradlew bootRun` at it. MySQL is published on the project's mysql block port
+# (8122, see the root README's table); `docker compose port mysql 3306` reports it.
 #
 #   docker compose -f backend/docker-compose.yml up -d mysql
 #
@@ -16,7 +17,7 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
       - MYSQL_DATABASE=labelfollower
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-8122}:3306"
     volumes:
       - label-follower-mysql-data:/var/lib/mysql
     healthcheck:

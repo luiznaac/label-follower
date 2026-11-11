@@ -12,7 +12,7 @@ internal data class MysqlEnv(
     companion object {
         fun fromEnvironment() = MysqlEnv(
             host = System.getenv("MYSQL_HOST") ?: "localhost",
-            port = System.getenv("MYSQL_PORT") ?: "3306",
+            port = System.getenv("MYSQL_PORT") ?: "8122",
             user = System.getenv("MYSQL_USER") ?: "root",
             password = System.getenv("MYSQL_PASSWORD") ?: "",
         )

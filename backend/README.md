@@ -16,7 +16,7 @@ This is one half of a two-project repo — see the root [README](../README.md) a
 ### Requirements
 
 - JDK 17.
-- MySQL — `docker compose -f backend/docker-compose.yml up -d mysql` (or the root compose file for the full stack).
+- MySQL — `docker compose -f backend/docker-compose.yml up -d mysql` (or the root compose file for the full stack). It publishes on host port `8122` (`docker compose port mysql 3306` reports the actual mapping).
 - A Spotify API app — you need a `SPOTIFY_CLIENT_SECRET` environment variable set to run it (the client ID is already in `application.properties` and isn't secret).
 
 ### Run it locally
@@ -27,7 +27,7 @@ export SPOTIFY_CLIENT_SECRET=your-spotify-app-client-secret
 ./gradlew bootRun
 ```
 
-Serves on `http://localhost:8080`.
+Serves on `http://localhost:8120` (`KTOR_PORT`, part of the project's port block — see the [root README's table](../README.md#ports)).
 
 ### What you can do through the API
 
