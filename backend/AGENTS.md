@@ -72,6 +72,8 @@ Two lanes:
 
 `unitTest` is a `Test` task over the same source set with the `integration` tag excluded. That tag is the convention for any spec that needs a Docker daemon: `MigrationSchemaTest` carries it today, as `@Tag("integration")` plus Kotest's `@Tags("integration")` — Kotest 5.9 filters on its own annotation and does not read the JUnit one. `test` still runs everything and depends on `dockerPreflight`, which probes `docker info` (30s limit) and fails in seconds — CLI missing, non-zero exit (a permission-denied socket included) or no return within 30s — with a message naming the Docker-free lane, instead of leaving an opaque `DockerClientProviderStrategy` error in the HTML report.
 
+`test` also pins Testcontainers' `api.version` system property to the daemon's advertised Docker API version (`docker version --format '{{.Server.APIVersion}}'`). Testcontainers 1.21.3's shaded docker-java otherwise speaks API `1.32`, which Docker 29+ rejects outright — that probe keeps the suite portable instead of hardcoding a version that goes stale.
+
 Existing tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.kt`, `TrackFinderTest.kt`.
 
 ## Database migrations
