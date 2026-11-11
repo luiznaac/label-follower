@@ -9,7 +9,7 @@ React 19 + Vite + TypeScript + Tailwind v4 + TanStack Query + React Router SPA �
 ## Commands
 
 ```bash
-npm run dev         # vite dev server, http://127.0.0.1:5274 (see "Spotify auth" below)
+npm run dev         # vite dev server, http://127.0.0.1:8123 (see "Spotify auth" below)
 npm run typecheck    # tsc -b --noEmit
 npm run check         # typecheck + Biome + Vitest — run this before opening a PR
 npm run build         # tsc -b && vite build
@@ -32,7 +32,7 @@ node <salgadinhos>/adapters/sandbox/run.mjs --stack node --workspace <repo-root>
 ## Label-follower-specific pieces
 
 - **`api/types.ts` mirrors `Track`/`Label`** (`backend/.../models/`) and the JSON shapes `api/` controllers return — smaller surface than the sibling repos, no codegen either. Update it in the same commit as any backend DTO change.
-- **Port 5274**, not 5273 (shougong's default) — chosen so both dev servers can run at once. Keep them distinct if you copy this scaffold's `vite.config.ts` pattern elsewhere.
+- **Port 8123** (`FRONTEND_DEV_PORT`, part of label-follower's port block — see the [root README's table](../README.md#ports)) with `strictPort: true`, so a taken port fails loudly instead of auto-incrementing: the served origin must stay identical to the Spotify redirect registered against it. `vite.config.ts` reads the env files through Vite's `loadEnv` — the config runs in Node and sees `process.env`, but Vite does not put the `.env`-file values there; the proxy target is `VITE_API_TARGET ?? http://localhost:8120`.
 - **`components/IsrcInput.tsx`/`TrackList.tsx`** are the core consolidation-flow UI; `SpotifyConnectButton.tsx` kicks off the PKCE flow.
 
 ## Coding standards

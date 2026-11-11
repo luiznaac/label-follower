@@ -72,6 +72,8 @@ Two lanes:
 
 `unitTest` is a `Test` task over the same source set with the `integration` tag excluded. That tag is the convention for any spec that needs a Docker daemon: `MigrationSchemaTest` carries it today, as `@Tag("integration")` plus Kotest's `@Tags("integration")` — Kotest 5.9 filters on its own annotation and does not read the JUnit one. `test` still runs everything and depends on `dockerPreflight`, which probes `docker info` (30s limit) and fails in seconds — CLI missing, non-zero exit (a permission-denied socket included) or no return within 30s — with a message naming the Docker-free lane, instead of leaving an opaque `DockerClientProviderStrategy` error in the HTML report.
 
+`test` also pins Testcontainers' `api.version` system property to the daemon's advertised Docker API version (`docker version --format '{{.Server.APIVersion}}'`). Testcontainers 1.21.3's shaded docker-java otherwise speaks API `1.32`, which Docker 29+ rejects outright — that probe keeps the suite portable instead of hardcoding a version that goes stale.
+
 Existing tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.kt`, `TrackFinderTest.kt`.
 
 ## Database migrations
@@ -95,10 +97,13 @@ Changing a table:
 
 | Key | Notes |
 |---|---|
+| `server.port` | `${KTOR_PORT:8120}` — 8120 is label-follower's `api` host port (see the root README's port table); the container overrides it with `--server.port=${API_PORT}`/8080 |
 | `spotify.clientId` | Spotify app client ID (not secret, safe to commit) |
 | `spotify.clientSecret` | `${SPOTIFY_CLIENT_SECRET}` — must be set as an env var, never hardcode a real value |
 | `spotify.authUri` / `spotify.apiUri` | Spotify OAuth token endpoint and API base URL |
-| `mysql.host` / `mysql.user` / `mysql.password` | required in production; the dev file defaults to `localhost`/`root`/empty, matching `backend/docker-compose.yml up -d mysql` |
+| `mysql.host` / `mysql.port` / `mysql.user` / `mysql.password` | host/user/password are required in production; the dev file defaults to `localhost`/`8122`/`root`/empty, matching `backend/docker-compose.yml up -d mysql` — 8122 is the block's `mysql` host port. The `-production` profile defaults the port to the fixed internal `3306` instead |
+
+The four host ports the project owns (api `8120`, web `8121`, mysql `8122`, frontend-dev `8123`) are recorded in [`.salgadinhos/ports.json`](../.salgadinhos/ports.json); `MysqlEnv.fromEnvironment()` in the migration path reads `MYSQL_PORT` with the same `8122` fallback.
 
 ## Build & maintenance
 

@@ -176,6 +176,20 @@ val dockerPreflight by tasks.registering {
 
 tasks.test {
     dependsOn(dockerPreflight)
+    // Testcontainers 1.21.3's shaded docker-java speaks Docker API 1.32 by default, which
+    // Docker 29+ rejects: "client version 1.32 is too old. Minimum supported API version is
+    // 1.40". docker-java takes its client version from the `api.version` property, so pin it
+    // to whatever the running daemon advertises instead of hardcoding a number that goes stale
+    // again. The `unitTest` lane stays Docker-free — this probe only runs on the full lane,
+    // after `dockerPreflight` has already confirmed the CLI and daemon are usable.
+    doFirst {
+        val daemonApiVersion = providers.exec {
+            commandLine("docker", "version", "--format", "{{.Server.APIVersion}}")
+        }.standardOutput.asText.get().trim()
+        if (daemonApiVersion.isNotEmpty()) {
+            systemProperty("api.version", daemonApiVersion)
+        }
+    }
 }
 
 // Only ship the executable Spring Boot jar — skip the extra `-plain.jar`.

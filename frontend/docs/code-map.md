@@ -37,11 +37,11 @@ Module → key files → seam index for the `frontend/` lane, plus the app entry
 
 ### Theme and root wiring
 **Purpose**: the design tokens and the Vite/TypeScript/Biome build.
-**Files**: `frontend/src/index.css`, `frontend/vite.config.ts`, `frontend/index.html`, `frontend/package.json`, `frontend/tsconfig*.json`, `frontend/biome.json`, `frontend/vitest.config.ts`
+**Files**: `frontend/src/index.css`, `frontend/vite.config.ts`, `frontend/vite.config.test.ts`, `frontend/index.html`, `frontend/package.json`, `frontend/tsconfig*.json`, `frontend/biome.json`, `frontend/vitest.config.ts`
 **Seam(s)**:
 - **Theme seam** (`src/index.css`) — the `@theme` block owns the Spotify-green `brand-*` ramp and the `surface-*` background scale; the components consume those tokens by name.
 - **Base-path seam** (`vite.config.ts`) — `base` is `/label-follower/` in production and `/` in dev; `main.tsx` derives the router `basename` from `import.meta.env.BASE_URL`.
-- **Loopback seam** (`vite.config.ts`) — binds `127.0.0.1` (not `localhost`) on port 5274 with `strictPort`, because Spotify's redirect-URI matching is exact; the `/api` proxy targets `VITE_API_TARGET ?? http://localhost:8080`.
+- **Loopback seam** (`vite.config.ts`) — binds `127.0.0.1` (not `localhost`) on `FRONTEND_DEV_PORT ?? 8123` with `strictPort`, because Spotify's redirect-URI matching is exact; the config reads the env files through Vite's `loadEnv` and the `/api` proxy targets `VITE_API_TARGET ?? http://localhost:8120`.
 - **Quality gate** (`package.json`) — `npm run check` = `typecheck` + Biome + Vitest; `npm test` runs Vitest.
 
 ## Entry points

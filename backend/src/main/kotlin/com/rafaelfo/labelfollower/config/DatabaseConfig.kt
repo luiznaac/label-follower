@@ -18,11 +18,10 @@ class DatabaseConfig {
     @Bean
     fun databaseConnection(
         @Value("\${mysql.host}") host: String,
-        // Not exposed as a top-level `mysql.*` config key: every real deployment
-        // (docker-compose, the sibling projects) talks to MySQL's default port.
-        // Only exists so local ad-hoc testing can point at a container published
-        // on a different host port without editing this file.
-        @Value("\${mysql.port:3306}") port: String,
+        // The DB's role in this project's port block (README's table): 8122 on the host,
+        // while the container keeps MySQL's fixed internal 3306. Production compose pins
+        // MYSQL_PORT=3306 so the container never inherits the host-side number.
+        @Value("\${mysql.port:8122}") port: String,
         @Value("\${mysql.user}") user: String,
         @Value("\${mysql.password}") password: String,
     ) = Database.connect(

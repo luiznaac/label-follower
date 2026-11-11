@@ -22,23 +22,25 @@ Root `package.json` holds script shims only (`npm run be:run`, `npm run be:check
 Three processes (the backend needs MySQL up first):
 
 ```bash
-docker compose -f backend/docker-compose.yml up -d mysql   # DB   -> localhost:3306
-cd backend && SPOTIFY_CLIENT_SECRET=… ./gradlew bootRun     # API  -> http://localhost:8080
-npm --prefix frontend run dev                                # SPA  -> http://127.0.0.1:5274
+docker compose -f backend/docker-compose.yml up -d mysql   # DB   -> localhost:8122
+cd backend && SPOTIFY_CLIENT_SECRET=… ./gradlew bootRun     # API  -> http://localhost:8120
+npm --prefix frontend run dev                                # SPA  -> http://127.0.0.1:8123
 ```
 
-The backend reads `MYSQL_HOST`/`MYSQL_USER`/`MYSQL_PASSWORD`; the defaults in `application.properties` already match the compose command above (localhost, root, no password — see the "Configuration" section of [backend/AGENTS.md](backend/AGENTS.md)). A root `.env` (gitignored, see `.env.example`) is loaded into `./gradlew bootRun` automatically, so secrets do not have to be exported by hand.
+The four host ports are label-follower's slice of the family port block — api `8120`, web `8121`, mysql `8122`, frontend-dev `8123` — recorded in [`.salgadinhos/ports.json`](.salgadinhos/ports.json) and tabled in the [README](README.md#ports). Container-internal ports stay fixed (`8080`/`8081`/`3306`); only the host side uses the block. A fresh clone with no `.env` boots on it.
+
+The backend reads `MYSQL_HOST`/`MYSQL_PORT`/`MYSQL_USER`/`MYSQL_PASSWORD`; the defaults in `application.properties` already match the compose command above (localhost, 8122, root, no password — see the "Configuration" section of [backend/AGENTS.md](backend/AGENTS.md)). A root `.env` (gitignored, see `.env.example`) is loaded into `./gradlew bootRun` automatically, so secrets do not have to be exported by hand.
 
 The SPA always calls `/api/*`; the Vite dev server proxies that to the backend and strips the `/api` prefix (`frontend/vite.config.ts`). Same-origin from the browser's point of view, so the backend needs no CORS config — keep it that way.
 
-Spotify user auth for `POST /consolidate` happens entirely in the browser (Authorization Code + PKCE, `frontend/src/lib/spotifyAuth.ts`). The backend still only does client-credentials for its own reads. The Spotify app needs the dev redirect URI `http://127.0.0.1:5274/callback` registered (Spotify rejects `http://localhost`).
+Spotify user auth for `POST /consolidate` happens entirely in the browser (Authorization Code + PKCE, `frontend/src/lib/spotifyAuth.ts`). The backend still only does client-credentials for its own reads. The Spotify app needs the dev redirect URI `http://127.0.0.1:8123/callback` registered (Spotify rejects `http://localhost`).
 
 ## Config & secrets
 
-Env vars: `SPOTIFY_CLIENT_SECRET` (required, no default) and the optional `MYSQL_HOST` / `MYSQL_USER` / `MYSQL_PASSWORD` (dev defaults `localhost` / `root` / empty, in `application.properties`). The gitignored `.env` supplies them locally — `build.gradle.kts` loads it into `bootRun` — and its versioned [`.env.example`](.env.example) is the reference for each var and its fixture.
+Env vars: `SPOTIFY_CLIENT_SECRET` (required, no default), the optional `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_USER` / `MYSQL_PASSWORD` (dev defaults `localhost` / `8122` / `root` / empty, in `application.properties`), and the optional `KTOR_PORT` (dev default `8120`). The gitignored `.env` supplies them locally — `build.gradle.kts` loads it into `bootRun` — and its versioned [`.env.example`](.env.example) is the reference for each var and its fixture.
 
 There is no `dev-*` fixture here: Spotify rejects a fake client secret, so dev needs a real value. The single secrets doc is `docs/salgadinhos/secrets.md` in the salgadinhos repo.
 
 ## Docker
 
-One image (repo-root `Dockerfile`, multi-stage) ships backend + frontend together: `supervisord` runs the Spring Boot jar (`API_PORT`/8080) and `nginx` (`deploy/nginx.conf.template` — serves the built SPA on `WEB_PORT`/8081 and reverse-proxies `/api` → the jar). `docker-compose.yml` at the root wraps the full stack — the app image plus its own MySQL — for local runs (`backend/docker-compose.yml` on its own runs just the DB, for a locally-run `./gradlew bootRun`). The schema comes from `backend/src/main/resources/db/migration/V*.sql`, applied by Flyway from `deploy/entrypoint.sh` before the app starts — see the "Database migrations" section of [backend/AGENTS.md](backend/AGENTS.md). `.github/workflows/docker-publish.yml` pushes `luiznaac/label-follower:latest` + `:v<run-number>` (a sequential build number, `github.run_number`) on master pushes that touch `backend/`, `frontend/`, `Dockerfile`, or `deploy/`.
+One image (repo-root `Dockerfile`, multi-stage) ships backend + frontend together: `supervisord` runs the Spring Boot jar (`API_PORT`/8080) and `nginx` (`deploy/nginx.conf.template` — serves the built SPA on `WEB_PORT`/8081 and reverse-proxies `/api` → the jar). `docker-compose.yml` at the root wraps the full stack — the app image plus its own MySQL — for local runs, publishing the block's `8120` (api), `8121` (web) and `8122` (mysql) while the container-internal ports stay fixed (`backend/docker-compose.yml` on its own runs just the DB, for a locally-run `./gradlew bootRun`). The schema comes from `backend/src/main/resources/db/migration/V*.sql`, applied by Flyway from `deploy/entrypoint.sh` before the app starts — see the "Database migrations" section of [backend/AGENTS.md](backend/AGENTS.md). `.github/workflows/docker-publish.yml` pushes `luiznaac/label-follower:latest` + `:v<run-number>` (a sequential build number, `github.run_number`) on master pushes that touch `backend/`, `frontend/`, `Dockerfile`, or `deploy/`.
