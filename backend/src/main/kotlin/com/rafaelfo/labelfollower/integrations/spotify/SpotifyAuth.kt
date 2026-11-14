@@ -2,6 +2,10 @@ package com.rafaelfo.labelfollower.integrations.spotify
 
 import com.rafaelfo.labelfollower.integrations.httputils.RafaHttp
 import com.rafaelfo.labelfollower.integrations.httputils.parsedBody
+import com.rafaelfo.labelfollower.usecases.telemetry.EventLevel
+import com.rafaelfo.labelfollower.usecases.telemetry.TelemetryAttributes
+import com.rafaelfo.labelfollower.usecases.telemetry.event
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Instant
@@ -13,6 +17,8 @@ class SpotifyAuth(
     private val rafaHttp: RafaHttp,
     private val clock: Clock,
 ) {
+
+    private val log = LoggerFactory.getLogger(SpotifyAuth::class.java)
 
     private var token: String? = null
     private var tokenExpiresAt: Instant? = null
@@ -26,21 +32,20 @@ class SpotifyAuth(
     }
 
     private fun shouldRequestNewToken(): Boolean {
-        if (token == null) {
-            println("SpotifyAuth: No token set")
-            return true
+        val reason = when {
+            token == null -> "missing"
+            tokenExpiresAt != null && clock.instant().isAfter(tokenExpiresAt) -> "expired"
+            else -> return false
         }
-
-        if (tokenExpiresAt != null && clock.instant().isAfter(tokenExpiresAt)) {
-            println("SpotifyAuth: Token expired")
-            return true
-        }
-
-        return false
+        log.event(
+            TelemetryAttributes.AUTH_TOKEN_REFRESHED,
+            "auth.reason" to reason,
+            level = EventLevel.DEBUG,
+        )
+        return true
     }
 
     private fun requestNewToken() {
-        println("SpotifyAuth: Requesting new token")
         val response = rafaHttp.post(
             url = spotifyConfig.authUri,
             formBody = mapOf("grant_type" to "client_credentials"),

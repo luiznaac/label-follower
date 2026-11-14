@@ -20,6 +20,11 @@ Module → key files → seam index for the `backend/` lane, plus the app entry 
 - **`UserInfoGateway`** (`usecases/UserInfoGateway.kt`) — playlist creation (`createPlaylistWith`); implemented by `SpotifyUserPlaylistGateway`.
 - **Orchestration order** (`Consolidator.kt`) — `getLabels()` → `discoverNewTracksFrom(...)` per label → `createPlaylistWith(...)` only for non-empty results; don't reverse it or notify before discovery finishes.
 
+### `usecases/telemetry` — telemetry contract constants
+**Purpose**: the token-free names every telemetry wiring and test shares — semconv attribute keys, the bounded `error.type` code map and the metric catalog (names, units, buckets, attribute allowlists).
+**Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/usecases/telemetry/{TelemetryAttributes,MetricCatalog,TelemetryLogging}.kt`
+**Seam(s)**: **catalog ↔ wiring** — `TelemetryViews` and the contract tests read the same constants, so a series cannot drift between the SDK configuration and its assertion. The OTel **API** may be imported here; SDK, exporters and instrumentation may not.
+
 ### `models` — domain data
 **Purpose**: plain Kotlin data classes with no framework annotations.
 **Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/models/Label.kt`, `models/Track.kt`
@@ -40,10 +45,18 @@ Module → key files → seam index for the `backend/` lane, plus the app entry 
 - **`SpotifyUserPlaylistGateway` → `UserInfoGateway`** (`SpotifyUserPlaylistGateway.kt`) — creates the playlist in chunks and names it from the label; chunk size and name format are adapter-local.
 - **`SpotifyAuth` / `SpotifyUserAuth`** — client-credentials vs user-token exchange and refresh; change both together when the auth flow moves.
 
+### `config/telemetry` — OpenTelemetry wiring
+**Purpose**: the composition-root seam for logs and metrics. It builds the OTel SDK from `TelemetrySettings`, installs the Logback appender, pins the metric views, redacts MDC, renders the prod JSON record, binds `request.id` and emits the single 4xx/5xx boundary record.
+**Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/config/telemetry/{Telemetry,TelemetrySettings,TelemetryExporters,TelemetryConfig,TelemetryResource,TelemetryViews,TelemetryJsonProviders,RedactingMdcFilter,RequestId,RequestTelemetryFilter,BoundaryTelemetry,ServletTelemetryConfig}.kt`; `backend/src/main/resources/logback-spring.xml`
+**Seam(s)**:
+- **SDK lifecycle** (`TelemetryConfig.kt`) — resolves `telemetry.*` from the Spring environment, builds the SDK once, installs the Logback appender and flushes in `@PreDestroy`. No `TracerProvider` and no trace exporter; a missing endpoint under `production` fails at boot.
+- **Request correlation** (`RequestTelemetryFilter.kt`, `BoundaryTelemetry.kt`) — the filter runs at `HIGHEST_PRECEDENCE` (the framework instrumentation filter follows one rung behind), resolves/echoes `X-Request-ID`, binds `request.id` in MDC and owns the one boundary record; the resolver runs first in the exception chain and only stores the failure for the filter.
+- **Redaction** (`RedactingMdcFilter.kt`) — one Logback `TurboFilter` ahead of both appenders, so the OTLP record and the stdout line cannot diverge.
+
 ### `integrations/httputils` — shared HTTP wrapper
 **Purpose**: the small OkHttp wrapper and response helpers every Spotify gateway uses.
-**Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/integrations/httputils/{RafaHttp,ResponseHelpers}.kt`
-**Seam(s)**: **`RafaHttp`** is the single request/parse helper; changing its interface touches every Spotify gateway. It must never be imported from `usecases/` or `models/` (`LayeringTest`).
+**Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/integrations/httputils/{RafaHttp,ResponseHelpers,OkHttpConfig,RequestIdInterceptor}.kt`
+**Seam(s)**: **`RafaHttp`** is the single request/parse helper; changing its interface touches every Spotify gateway. It must never be imported from `usecases/` or `models/` (`LayeringTest`). **`OkHttpConfig`** owns the one shared `Call.Factory`: the OkHttp instrumentation records `http.client.request.duration` and `RequestIdInterceptor` propagates `request.id` from MDC.
 
 ### `application` and `config` — boot and infrastructure
 **Purpose**: the Spring Boot entry, the profile/config beans, and the Flyway migration tooling.

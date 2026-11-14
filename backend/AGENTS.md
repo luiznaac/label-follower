@@ -54,6 +54,14 @@ Run `./gradlew detekt` before finishing a change.
 
 - [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — "the language-idiom rules the tooling does not enforce"
 
+## Observability
+
+- [`docs/observability.md`](docs/observability.md) — the normative logging & metrics contract (OpenTelemetry logs + metrics over OTLP, no traces); read it before adding or changing anything that emits telemetry
+- The wiring lives in [`config/telemetry/`](src/main/kotlin/com/rafaelfo/labelfollower/config/telemetry): SDK build and `@PreDestroy` flush, resource, metric views, redaction, structured events, the servlet correlation filter and its boundary resolver.
+- `usecases/telemetry/` holds the token-free contract constants (`MetricCatalog`, `TelemetryAttributes`) shared by wiring and tests — the OTel **API** is allowed there, the SDK and instrumentation are not.
+- `usecases/telemetry/TelemetryLogging.kt` is the structured `event()` call — SLF4J is allowed there, the SDK is not.
+- `integrations/httputils/OkHttpConfig.kt` is the one shared outbound client: OkHttp instrumentation plus `X-Request-ID` propagation.
+
 ## Testing
 
 Kotest (`kotest-runner-junit5`, `kotest-extensions-spring`), MockK. Test source roots:
@@ -102,6 +110,12 @@ Changing a table:
 | `spotify.clientSecret` | `${SPOTIFY_CLIENT_SECRET}` — must be set as an env var, never hardcode a real value |
 | `spotify.authUri` / `spotify.apiUri` | Spotify OAuth token endpoint and API base URL |
 | `mysql.host` / `mysql.port` / `mysql.user` / `mysql.password` | host/user/password are required in production; the dev file defaults to `localhost`/`8122`/`root`/empty, matching `backend/docker-compose.yml up -d mysql` — 8122 is the block's `mysql` host port. The `-production` profile defaults the port to the fixed internal `3306` instead |
+| `telemetry.service-name` | `${OTEL_SERVICE_NAME:label-follower}` — also the custom meter scope name |
+| `telemetry.endpoint` | `${OTEL_EXPORTER_OTLP_ENDPOINT:}` — dev falls back to `http://localhost:4318`; **required under `production`** (boot fails without it) |
+| `telemetry.console` | `${TELEMETRY_CONSOLE:false}` — dev-only console exporters; rejected under `production` |
+| log level | `${LOG_LEVEL:-${LOGBACK_LOG_LEVEL:-INFO}}` — `LOGBACK_LOG_LEVEL` stays a deprecated alias |
+
+The rest of the telemetry contract (`OTEL_*`, `SERVICE_VERSION`, `HOSTNAME`) is read from the environment untouched — see [`docs/observability.md`](docs/observability.md) §2. The production deploy must set `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_SERVICE_NAME` before the first ported image ships, and `deploy/supervisord.conf` sets `stopwaitsecs=20` to cover the SDK's 10 s shutdown flush.
 
 The four host ports the project owns (api `8120`, web `8121`, mysql `8122`, frontend-dev `8123`) are recorded in [`.salgadinhos/ports.json`](../.salgadinhos/ports.json); `MysqlEnv.fromEnvironment()` in the migration path reads `MYSQL_PORT` with the same `8122` fallback.
 
