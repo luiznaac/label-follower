@@ -38,6 +38,26 @@ dependencyManagement {
 
 val exposedVersion = "1.0.0-rc-1"
 val flywayVersion = "12.11.0"
+// OpenTelemetry versions come from the environments/kotlin catalog, not Spring Boot's BOM:
+// the BOM pins an older line whose metrics API predates the explicit-bucket view options and
+// whose instrumentation does not match. Both groups are forced below so they move together.
+val otelVersion = "1.67.0"
+val otelInstrumentationVersion = "2.33.1-alpha"
+
+// The build version lands on the classpath so the telemetry resource can read service.version
+// from it (docs/observability.md §1, "Resource attributes") without a generated-code dependency.
+val writeBuildInfo by tasks.registering(WriteProperties::class) {
+    destinationFile.set(layout.buildDirectory.file("generated/build-info/build-info.properties"))
+    property("version", project.version.toString())
+}
+
+sourceSets.main {
+    resources.srcDir(layout.buildDirectory.dir("generated/build-info"))
+}
+
+tasks.processResources {
+    dependsOn(writeBuildInfo)
+}
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -48,6 +68,18 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")
+
+    // Telemetry — OpenTelemetry logs + metrics over OTLP, no traces (see docs/observability.md).
+    // The OTel API is plain; the SDK, exporters, appenders and framework instrumentation stay in
+    // this config/ edge, never in usecases/. Versions track environments/kotlin's catalog.
+    implementation("io.opentelemetry:opentelemetry-sdk:$otelVersion")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp:$otelVersion")
+    implementation("io.opentelemetry:opentelemetry-exporter-logging:$otelVersion")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:$otelInstrumentationVersion")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-runtime-telemetry:$otelInstrumentationVersion")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-webmvc-6.0:$otelInstrumentationVersion")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-okhttp-3.0:$otelInstrumentationVersion")
+    implementation("net.logstash.logback:logstash-logback-encoder:8.1")
 
     // Persistence — MySQL via Exposed, same stack as the sibling Kotlin services
     // (portfolio-2/chameidor). Single Gradle module here (see backend/AGENTS.md "Architecture"),
@@ -82,6 +114,8 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("org.testcontainers:mysql:1.21.3")
     testImplementation("com.lemonappdev:konsist:0.17.3")
+    testImplementation("io.opentelemetry:opentelemetry-sdk-testing:$otelVersion")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 }
 
@@ -308,6 +342,20 @@ configurations.all {
     resolutionStrategy.eachDependency {
         if (requested.group == "com.fasterxml.jackson.core" && requested.name == "jackson-annotations") {
             useVersion("2.21")
+        }
+        // Spring Boot's BOM also manages OpenTelemetry; keep the two groups on the catalog line
+        // so the metrics API and the framework instrumentation never split versions.
+        if (requested.group == "io.opentelemetry") {
+            useVersion(
+                if (requested.name == "opentelemetry-api-incubator") "$otelVersion-alpha" else otelVersion,
+            )
+        }
+        if (requested.group == "io.opentelemetry.instrumentation") {
+            // The stable instrumentation API is on the stable line; the modules and their
+            // incubator dependency carry the -alpha suffix. Force each to its own line.
+            useVersion(
+                if (requested.name == "opentelemetry-instrumentation-api") "2.33.1" else otelInstrumentationVersion,
+            )
         }
     }
 }
