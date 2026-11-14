@@ -66,7 +66,10 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 8080 8081
 
+# Two probes in one image: nginx still serves the SPA, and the API's liveness endpoint
+# confirms the backend answered behind it. Either failing marks the container unhealthy.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
-    CMD curl -fsS "http://localhost:${WEB_PORT}/" >/dev/null || exit 1
+    CMD curl -fsS "http://localhost:${WEB_PORT}/" >/dev/null \
+    && curl -fsS "http://localhost:${API_PORT}/health/internal" >/dev/null || exit 1
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

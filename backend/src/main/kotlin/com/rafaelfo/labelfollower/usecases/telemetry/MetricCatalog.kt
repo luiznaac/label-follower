@@ -10,8 +10,12 @@ object MetricCatalog {
     const val HTTP_SERVER_DURATION = "http.server.request.duration"
     const val HTTP_SERVER_ACTIVE_REQUESTS = "http.server.active_requests"
     const val HTTP_CLIENT_DURATION = "http.client.request.duration"
+    const val HEALTH_STATUS = "health.check.status"
+    const val HEALTH_FAILURES = "health.check.failures"
     const val SECONDS = "s"
     const val REQUESTS = "{request}"
+    const val CHECKS = "{check}"
+    const val DIMENSIONLESS = "1"
 
     val HTTP_DURATION_BUCKETS = listOf(
         0.005,

@@ -16,10 +16,10 @@ label-follower discovers new tracks from record labels the user follows on Spoti
 
 Single Gradle module, `backend/src/main/kotlin/com/rafaelfo/labelfollower/`:
 
-- **`api/`** — `@RestController`s (Spring MVC, not Ktor). Thin: each endpoint delegates directly to a usecase class. `ConsolidatorController`, `IntrospectController`, `TrackController`.
-- **`usecases/`** — business logic as `@Service`/plain classes (`Consolidator`, `LabelIntrospector`, `TrackFinder`), plus **port interfaces** implemented by the integrations layer: `OurInfoGateway` (persisted label/track info), `ExternalInfoGateway` (Spotify lookups for a single track), `UserInfoGateway` (playlist creation on the user's Spotify account).
+- **`api/`** — `@RestController`s (Spring MVC, not Ktor). Thin: each endpoint delegates directly to a usecase class. `ConsolidatorController`, `IntrospectController`, `TrackController`, `AuthController`, `HealthController`.
+- **`usecases/`** — business logic as `@Service`/plain classes (`Consolidator`, `LabelIntrospector`, `TrackFinder`), plus **port interfaces** implemented by the integrations layer: `OurInfoGateway` (persisted label/track info), `ExternalInfoGateway` (Spotify lookups for a single track), `UserInfoGateway` (playlist creation on the user's Spotify account), `HealthChecker` (one health component). `usecases/health/HealthHandler` aggregates the checkers, and `usecases/health/HealthTelemetry` owns the `health.check.*` instruments and transition records.
 - **`integrations/`** — implementations of the usecase ports:
-  - `integrations/database/` implements `OurInfoGateway` against MySQL via Exposed (`OurInfoGatewayImpl`, plus its `*Table`/`*Entity` classes — see `config/DatabaseConfig.kt` for the connection and the "Database migrations" section for how the schema itself is managed).
+  - `integrations/database/` implements `OurInfoGateway` against MySQL via Exposed (`OurInfoGatewayImpl`, plus its `*Table`/`*Entity` classes — see `config/DatabaseConfig.kt` for the connection and the "Database migrations" section for how the schema itself is managed) and `HealthChecker` for the `mysql-connection` component (`MySqlConnectionHealthCheck`).
   - `integrations/spotify/` implements `ExternalInfoGateway`/`UserInfoGateway` against the real Spotify API (`SpotifyAlbumGateway`, `SpotifyTrackGateway`, `SpotifyLabelGateway`, `SpotifyUserPlaylistGateway`, `SpotifyAuth`, plus `models/`/`responses/` for the Spotify JSON shapes).
   - `integrations/httputils/` — small OkHttp wrapper (`RafaHttp`) and response helpers shared by the Spotify gateways.
 - **`models/`** — plain domain data classes, `Label` and `Track`.
@@ -82,7 +82,7 @@ Two lanes:
 
 `test` also pins Testcontainers' `api.version` system property to the daemon's advertised Docker API version (`docker version --format '{{.Server.APIVersion}}'`). Testcontainers 1.21.3's shaded docker-java otherwise speaks API `1.32`, which Docker 29+ rejects outright — that probe keeps the suite portable instead of hardcoding a version that goes stale.
 
-Existing tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.kt`, `TrackFinderTest.kt`.
+Existing tests to use as a style reference: `SpotifyAuthTest.kt`, `LabelIntrospectorTest.kt`, `TrackFinderTest.kt`; the telemetry contract suites live under `config/telemetry/`, `integrations/httputils/` and `usecases/health/`, with `api/HealthControllerTest.kt` covering the HTTP surface.
 
 ## Database migrations
 

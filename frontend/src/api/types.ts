@@ -44,5 +44,21 @@ export interface ExchangeCodeRequest {
 /** DELETE /auth/spotify */
 export type DisconnectSpotifyResponse = undefined;
 
+/**
+ * GET /health — the scaffold's snake_case health contract (docs/observability.md §8), not the
+ * camelCase shape the rest of this API uses. The backend serializes it with an explicit
+ * SnakeCaseStrategy so the family's probes read the same body everywhere.
+ */
+export interface HealthCheckResponse {
+  service_name: string;
+  is_healthy: boolean;
+  timestamp: string;
+}
+
+/** GET /health/internal — the cheap liveness probe the image HEALTHCHECK calls. */
+export interface HealthInternalResponse {
+  is_healthy: boolean;
+}
+
 // `Label` (backend models/Label.kt) is never serialized by any endpoint, so it is
 // intentionally not mirrored here.

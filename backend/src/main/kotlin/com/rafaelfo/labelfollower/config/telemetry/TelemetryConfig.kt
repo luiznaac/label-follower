@@ -1,5 +1,6 @@
 package com.rafaelfo.labelfollower.config.telemetry
 
+import com.rafaelfo.labelfollower.usecases.health.HealthTelemetry
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender
@@ -40,6 +41,9 @@ class TelemetryConfig(
 
     @Bean
     fun meter(): Meter = Telemetry.meter(runtime.openTelemetry, settings)
+
+    @Bean
+    fun healthTelemetry(meter: Meter): HealthTelemetry = HealthTelemetry(meter)
 
     @PreDestroy
     fun flush() {

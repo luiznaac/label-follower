@@ -20,7 +20,7 @@ allow:
   - entry: usecase/src/main/kotlin/dev/agner/template/usecase/commons/TelemetryLogging.kt
     reason: the event helper lives in usecases/telemetry, the layer SLF4J belongs to here
   - entry: usecase/src/main/kotlin/dev/agner/template/usecase/health/HealthTelemetry.kt
-    reason: health instruments arrive with the health endpoint ticket (#95) in this lane's layout
+    reason: no usecase module; the health instruments live in usecases/health and the MySQL adapter in integrations/database
   - entry: application/src/main/kotlin/dev/agner/template/application/telemetry/Telemetry.kt
     reason: no application module; the SDK build lives in config/telemetry
   - entry: application/src/main/kotlin/dev/agner/template/application/telemetry/TelemetryConfig.kt
@@ -42,7 +42,7 @@ allow:
   - entry: usecase/src/test/kotlin/dev/agner/template/usecase/commons/TelemetryLoggingTest.kt
     reason: no usecase module; the suite lives beside the helper in config/telemetry
   - entry: usecase/src/test/kotlin/dev/agner/template/usecase/health/HealthTelemetryTest.kt
-    reason: health instruments arrive with #95; the suite follows that port
+    reason: no usecase module; the suite lives beside the port in usecases/health
   - entry: application/src/test/kotlin/dev/agner/template/application/telemetry/TelemetryConfigTest.kt
     reason: no application module; the contract suite lives in config/telemetry tests
   - entry: application/src/test/kotlin/dev/agner/template/application/telemetry/RedactingMdcFilterTest.kt
