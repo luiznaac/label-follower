@@ -13,6 +13,8 @@ object TelemetryAttributes {
     const val TELEMETRY_EXPORT_FAILED = "telemetry.export.failed"
     const val AUTH_TOKEN_REFRESHED = "auth.token.refreshed"
     const val LABELS_CONSOLIDATED = "labels.consolidated"
+    const val HEALTH_CHECK_FAILED = "health.check.failed"
+    const val HEALTH_CHECK_RECOVERED = "health.check.recovered"
     const val REQUEST_ID = "request.id"
     const val REQUEST_ID_HEADER = "X-Request-ID"
 
@@ -25,6 +27,7 @@ object TelemetryAttributes {
     const val SERVER_ADDRESS = "server.address"
     const val SERVER_PORT = "server.port"
     const val ERROR_TYPE = "error.type"
+    const val HEALTH_COMPONENT = "health.component"
 
     const val RESOURCE_NOT_FOUND = "resource_not_found"
     const val INVALID_ARGUMENT = "invalid_argument"

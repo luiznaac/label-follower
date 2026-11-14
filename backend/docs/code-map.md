@@ -6,18 +6,22 @@ Module → key files → seam index for the `backend/` lane, plus the app entry 
 
 ### `api` — Spring MVC controllers
 **Purpose**: the HTTP boundary — thin `@RestController`s that extract request data and delegate straight to a usecase.
-**Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/api/ConsolidatorController.kt`, `api/IntrospectController.kt`, `api/TrackController.kt`, `api/AuthController.kt`
+**Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/api/ConsolidatorController.kt`, `api/IntrospectController.kt`, `api/TrackController.kt`, `api/AuthController.kt`, `api/HealthController.kt`
 **Seam(s)**:
 - **Controller → usecase** (`ConsolidatorController.kt`, `IntrospectController.kt`, `TrackController.kt`) — calls `Consolidator.introspectAllLabelsAndNotify()`, or `TrackFinder.findBy(isrc)` followed by `LabelIntrospector.introspectFrom(...)` / `.discoverNewTracksFrom(...)`. Keep business logic out of the method body; only path-variable and header extraction belong here.
 - **Auth boundary** (`AuthController.kt`) — `GET /auth/spotify/status`, `POST /auth/spotify/exchange` and `DELETE /auth/spotify`; the code exchange is server-side, so the backend owns the refresh token and the frontend never holds one.
+- **Health surface** (`HealthController.kt`) — `GET /health` delegates to `HealthHandler` and maps each result to the snake_case component list; `GET /health/internal` is the cheap liveness body `{"is_healthy":true}`. The Docker health probe calls the latter.
 
 ### `usecases` — business logic and ports
-**Purpose**: the orchestration services plus the three port interfaces the integration layer implements.
-**Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/usecases/{Consolidator,LabelIntrospector,TrackFinder}.kt`, `usecases/{OurInfoGateway,ExternalInfoGateway,UserInfoGateway}.kt`
+**Purpose**: the orchestration services plus the port interfaces the integration layer implements, and the health-check domain model.
+**Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/usecases/{Consolidator,LabelIntrospector,TrackFinder}.kt`, `usecases/{OurInfoGateway,ExternalInfoGateway,UserInfoGateway}.kt`, `usecases/health/{HealthChecker,HealthCheckResult,HealthHandler,HealthTelemetry}.kt`
 **Seam(s)**:
 - **`OurInfoGateway`** (`usecases/OurInfoGateway.kt`) — persisted label/track data (`getTracksFrom`, `saveTracks`, `getLabelBy`, `getLabels`); implemented by `OurInfoGatewayImpl`. It exposes only `Label`/`Track`, never Exposed types.
 - **`ExternalInfoGateway`** (`usecases/ExternalInfoGateway.kt`) — third-party lookups (`getLabel`, `findTrackBy`, `getTracksFrom`); implemented by `SpotifyGateway`. No `Spotify*` type may appear in `usecases/`.
 - **`UserInfoGateway`** (`usecases/UserInfoGateway.kt`) — playlist creation (`createPlaylistWith`); implemented by `SpotifyUserPlaylistGateway`.
+- **`HealthChecker`** (`usecases/health/HealthChecker.kt`) — the inbound port every health component implements (`getHealthStatus(): HealthCheckResult`); `HealthHandler` collects the whole `Set<HealthChecker>` Spring builds. A new component is one `@Component` in `integrations/`.
+- **`HealthHandler`** (`usecases/health/HealthHandler.kt`) — the `GET /health` orchestration: run every checker, record each result through `HealthTelemetry`, return the list; the controller only maps it to its response DTO.
+- **`HealthTelemetry`** (`usecases/health/HealthTelemetry.kt`) — records the last result per component into the `health.check.status` gauge, increments `health.check.failures` per failed check and logs only the WARN/INFO state transitions. The gauge callback reads the last observation and never performs I/O.
 - **Orchestration order** (`Consolidator.kt`) — `getLabels()` → `discoverNewTracksFrom(...)` per label → `createPlaylistWith(...)` only for non-empty results; don't reverse it or notify before discovery finishes.
 
 ### `usecases/telemetry` — telemetry contract constants
@@ -32,9 +36,10 @@ Module → key files → seam index for the `backend/` lane, plus the app entry 
 
 ### `integrations/database` — Exposed adapter
 **Purpose**: implements `OurInfoGateway` against MySQL via Exposed.
-**Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/integrations/database/{OurInfoGatewayImpl,AllTables,LabelTable,LabelTrackTable,TrackTable,SpotifyAccountTable}.kt`
+**Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/integrations/database/{OurInfoGatewayImpl,AllTables,LabelTable,LabelTrackTable,TrackTable,SpotifyAccountTable,MySqlConnectionHealthCheck}.kt`
 **Seam(s)**:
 - **Adapter seam** (`OurInfoGatewayImpl.kt`) — `transaction { … }` stays inside this package; `LabelTable`/`LabelTrackTable`/`TrackTable` map the schema, `SpotifyAccountTable` stores the backend's Spotify login.
+- **Health adapter seam** (`MySqlConnectionHealthCheck.kt`) — the `mysql-connection` component; it runs `SELECT 1` through the shared Exposed `Database` and degrades every failure to an unhealthy `HealthCheckResult`, so the endpoint answers even when MySQL is down. Time comes from the injected `Clock`.
 - **Schema source of truth** (`AllTables.kt`) — `allTables` feeds `MigrationScripts` and `MigrationSchemaTest`; a new table must be registered here, and `V1__init.sql` must match.
 
 ### `integrations/spotify` — Spotify adapters
@@ -49,7 +54,7 @@ Module → key files → seam index for the `backend/` lane, plus the app entry 
 **Purpose**: the composition-root seam for logs and metrics. It builds the OTel SDK from `TelemetrySettings`, installs the Logback appender, pins the metric views, redacts MDC, renders the prod JSON record, binds `request.id` and emits the single 4xx/5xx boundary record.
 **Files**: `backend/src/main/kotlin/com/rafaelfo/labelfollower/config/telemetry/{Telemetry,TelemetrySettings,TelemetryExporters,TelemetryConfig,TelemetryResource,TelemetryViews,TelemetryJsonProviders,RedactingMdcFilter,RequestId,RequestTelemetryFilter,BoundaryTelemetry,ServletTelemetryConfig}.kt`; `backend/src/main/resources/logback-spring.xml`
 **Seam(s)**:
-- **SDK lifecycle** (`TelemetryConfig.kt`) — resolves `telemetry.*` from the Spring environment, builds the SDK once, installs the Logback appender and flushes in `@PreDestroy`. No `TracerProvider` and no trace exporter; a missing endpoint under `production` fails at boot.
+- **SDK lifecycle** (`TelemetryConfig.kt`) — resolves `telemetry.*` from the Spring environment, builds the SDK once, installs the Logback appender and flushes in `@PreDestroy`. It also publishes the meter and the single `HealthTelemetry` bean. No `TracerProvider` and no trace exporter; a missing endpoint under `production` fails at boot.
 - **Request correlation** (`RequestTelemetryFilter.kt`, `BoundaryTelemetry.kt`) — the filter runs at `HIGHEST_PRECEDENCE` (the framework instrumentation filter follows one rung behind), resolves/echoes `X-Request-ID`, binds `request.id` in MDC and owns the one boundary record; the resolver runs first in the exception chain and only stores the failure for the filter.
 - **Redaction** (`RedactingMdcFilter.kt`) — one Logback `TurboFilter` ahead of both appenders, so the OTLP record and the stdout line cannot diverge.
 
@@ -68,11 +73,11 @@ Module → key files → seam index for the `backend/` lane, plus the app entry 
 
 ### Build, tests and deploy
 **Purpose**: the Gradle/detekt baseline, the layering guard, and the packaging story.
-**Files**: `backend/build.gradle.kts`, `backend/settings.gradle.kts`, `backend/config/detekt/{config,format}.yml`; `backend/src/test/kotlin/com/rafaelfo/labelfollower/architecture/LayeringTest.kt`, `config/migration/MigrationSchemaTest.kt`, `usecases/{LabelIntrospectorTest,TrackFinderTest}.kt`, `integrations/spotify/*Test.kt`, `models/LabelTest.kt`, `integrations/httputils/RafaHttpTest.kt`; `deploy/{entrypoint.sh,nginx.conf.template,supervisord.conf}`, `docker-compose.yml`
+**Files**: `backend/build.gradle.kts`, `backend/settings.gradle.kts`, `backend/config/detekt/{config,format}.yml`; `backend/src/test/kotlin/com/rafaelfo/labelfollower/architecture/LayeringTest.kt`, `config/migration/MigrationSchemaTest.kt`, `usecases/{LabelIntrospectorTest,TrackFinderTest}.kt`, `usecases/health/HealthTelemetryTest.kt`, `api/HealthControllerTest.kt`, `integrations/spotify/*Test.kt`, `models/LabelTest.kt`, `integrations/httputils/RafaHttpTest.kt`; `deploy/{entrypoint.sh,nginx.conf.template,supervisord.conf}`, `docker-compose.yml`, `Dockerfile`
 **Seam(s)**:
 - **Layering guard** (`architecture/LayeringTest.kt`) — Konsist fails the build if `usecases/` imports `integrations/` or Spotify types, or `models/` imports framework/vendor packages; this is the compensation for not having one Gradle module per layer.
 - **Schema guard** (`config/migration/MigrationSchemaTest.kt`) — asserts Exposed's `allTables` needs no extra migration against the migrated test database.
-- **Deploy entry** (`deploy/entrypoint.sh`) — migrate, then start the app; `nginx.conf.template` serves the built SPA and proxies `/api`.
+- **Deploy entry** (`deploy/entrypoint.sh`) — migrate, then start the app; `nginx.conf.template` serves the built SPA and proxies `/api`. The image `HEALTHCHECK` probes nginx and `GET /health/internal` on the API port, so either process failing marks the container unhealthy.
 
 ## Entry points
 
