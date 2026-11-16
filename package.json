@@ -6,13 +6,16 @@
     "setup": "npm --prefix frontend install",
     "be:run": "cd backend && ./gradlew bootRun",
     "be:check": "cd backend && ./gradlew detekt test",
+    "be:unit": "cd backend && ./gradlew unitTest --no-daemon",
     "be:build": "cd backend && ./gradlew bootJar",
     "db:migrate": "cd backend && ./gradlew migrate",
     "db:generate": "cd backend && ./gradlew generateMigrationScript",
     "fe:dev": "npm --prefix frontend run dev",
     "fe:build": "npm --prefix frontend run build",
     "fe:typecheck": "npm --prefix frontend run typecheck",
-    "check": "npm run be:check && npm run fe:typecheck && npm run fe:build",
+    "fe:lint": "npm --prefix frontend run lint",
+    "fe:test": "npm --prefix frontend run test",
+    "check": "npm run be:check && npm run fe:typecheck && npm run fe:lint && npm run fe:test && npm run fe:build",
     "up": "docker compose up --build",
     "down": "docker compose down"
   }
