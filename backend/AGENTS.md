@@ -1,6 +1,6 @@
 # AGENTS.md — label-follower (backend)
 
-Development guidelines for anyone (human, agent, or tool) working in `backend/` (the Kotlin/Spring service). The repo is a two-project monorepo — see the root [AGENTS.md](../AGENTS.md) for the layout and the one cross-cutting rule, and [frontend/README.md](../frontend/README.md) for the SPA. Run backend commands from this directory (`cd backend && ./gradlew <task>`).
+Development guidelines for anyone (human, agent, or tool) working in `backend/` (the Kotlin/Spring service). The repo is a two-project monorepo — see the root [AGENTS.md](../AGENTS.md) for the layout and the one cross-cutting rule, and [frontend/AGENTS.md](../frontend/AGENTS.md) for the SPA. Backend tasks run through the Gradle wrapper in this directory.
 
 ## Code map
 
@@ -12,7 +12,7 @@ label-follower discovers new tracks from record labels the user follows on Spoti
 
 ## Architecture
 
-**This is the oldest project in the `luiznaac` personal family and predates the `application/gateway/http-api/usecase/persistence` multi-module split used by [chameidor](../../chameidor/AGENTS.md) and [portfolio-2](../../portfolio-2/AGENTS.md). The repo was given a `backend/` + `frontend/` split to add a web UI (mirroring [shougong](../../shougong/AGENTS.md)), but `backend/` itself is still a single Gradle module using plain Spring MVC, not Ktor. Do not restructure it into the multi-module Ktor shape unless explicitly asked — that flat single-module layout is an intentional (if dated) characteristic, not a bug to fix.**
+**This is the oldest project in the `luiznaac` personal family and predates the `application/gateway/http-api/usecase/persistence` multi-module split used by [chameidor](https://github.com/luiznaac/chameidor/blob/master/AGENTS.md) and [portfolio-2](https://github.com/luiznaac/portfolio-2/blob/master/AGENTS.md). The repo was given a `backend/` + `frontend/` split to add a web UI (mirroring [shougong](https://github.com/luiznaac/shougong/blob/master/AGENTS.md)), but `backend/` itself is still a single Gradle module using plain Spring MVC, not Ktor. Do not restructure it into the multi-module Ktor shape unless explicitly asked — that flat single-module layout is an intentional (if dated) characteristic, not a bug to fix.**
 
 Single Gradle module, `backend/src/main/kotlin/com/rafaelfo/labelfollower/`:
 
@@ -134,4 +134,4 @@ Remote: `git@github.com:luiznaac/label-follower.git`. Commits are lowercase, imp
 
 ## Related repositories
 
-Same author/family as [chameidor](../../chameidor/AGENTS.md) and [portfolio-2](../../portfolio-2/AGENTS.md), but architecturally the odd one out — it predates their Ktor multi-module pattern. Don't port conventions from those two here without being asked; equally, don't use this repo's structure as a template for new services in this family. The `backend/` + `frontend/` monorepo shape and the frontend stack are borrowed from [shougong](../../shougong/AGENTS.md).
+Same author/family as [chameidor](https://github.com/luiznaac/chameidor/blob/master/AGENTS.md) and [portfolio-2](https://github.com/luiznaac/portfolio-2/blob/master/AGENTS.md). The `backend/` + `frontend/` monorepo shape and the frontend stack are borrowed from [shougong](https://github.com/luiznaac/shougong/blob/master/AGENTS.md). See the Architecture note above for why this lane is the odd one out.

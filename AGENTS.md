@@ -2,45 +2,31 @@
 
 Development guidelines for anyone (human, agent, or tool) working in this repository.
 
-Two projects, one repo (layout borrowed from [shougong](../shougong/AGENTS.md)):
+Surfaces: **HTTP + Browser**. The backend serves the HTTP API; the SPA is the browser surface. Boot and check commands live in [README.md](README.md); the app entry points live in [docs/code-map.md](docs/code-map.md).
 
-- **`backend/`** — the Kotlin / Spring Boot service (plain Spring MVC, single Gradle module). All backend commands run from `backend/` (`cd backend && ./gradlew <task>`). Architecture, conventions and rules for evolving it are in [backend/AGENTS.md](backend/AGENTS.md) — read that before touching `backend/`. It is deliberately *not* the multi-module Ktor shape of the other repos in this family; don't "upgrade" it.
-- **`frontend/`** — the React / Vite SPA. Commands run from `frontend/` (`npm --prefix frontend run <script>`). Details in [frontend/README.md](frontend/README.md).
+Two projects, one repo (layout borrowed from [shougong](https://github.com/luiznaac/shougong/blob/master/AGENTS.md)):
+
+- **`backend/`** — the Kotlin / Spring Boot service (plain Spring MVC, single Gradle module). Backend tasks run through the Gradle wrapper in `backend/`. Architecture, conventions and rules for evolving it are in [backend/AGENTS.md](backend/AGENTS.md) — read that before touching `backend/`. It is deliberately *not* the multi-module Ktor shape of the other repos in this family; don't "upgrade" it.
+- **`frontend/`** — the React / Vite SPA. Frontend scripts run through the root shims (`npm run fe:*`). Details in [frontend/AGENTS.md](frontend/AGENTS.md).
+
+## Code map
+
+- [`docs/code-map.md`](docs/code-map.md)
 
 ## Cross-cutting rule
 
 `frontend/src/api/types.ts` is a hand-maintained mirror of the backend DTOs — today just `backend/src/main/kotlin/com/rafaelfo/labelfollower/models/Track.kt` and the JSON shapes the controllers in `backend/.../api/` return. Any change to a request/response shape on one side must update the other in the same commit. There is no codegen.
 
-## Tooling
+## Conventions
 
-Root `package.json` holds script shims only (`npm run be:run`, `npm run be:check`, `npm run db:migrate`, `npm run db:generate -- -Pname=V2__x`, `npm run fe:dev`, `npm run fe:build`, `npm run check`, `npm run up`). It has no dependencies and is not a real package. `.pre-commit-config.yaml` lives at the root and scopes hooks by path (`^backend/.*\.kt$` → detekt, `^frontend/.*\.(ts|tsx)$` → `tsc` typecheck). It also carries `no-commit-to-branch` — the git/PR conventions are enforced there, not merely stated (see `salgadinhos/global/AGENTS.md`).
-
-`.github/workflows/ci.yml` runs two independent jobs — `backend` (`./gradlew detekt test`) and `frontend` (`npm ci && npm run typecheck && npm run build`).
-
-## Dev
-
-Three processes (the backend needs MySQL up first):
-
-```bash
-docker compose -f backend/docker-compose.yml up -d mysql   # DB   -> localhost:8122
-cd backend && SPOTIFY_CLIENT_SECRET=… ./gradlew bootRun     # API  -> http://localhost:8120
-npm --prefix frontend run dev                                # SPA  -> http://127.0.0.1:8123
-```
-
-The four host ports are label-follower's slice of the family port block — api `8120`, web `8121`, mysql `8122`, frontend-dev `8123` — recorded in [`.salgadinhos/ports.json`](.salgadinhos/ports.json) and tabled in the [README](README.md#ports). Container-internal ports stay fixed (`8080`/`8081`/`3306`); only the host side uses the block. A fresh clone with no `.env` boots on it.
-
-The backend reads `MYSQL_HOST`/`MYSQL_PORT`/`MYSQL_USER`/`MYSQL_PASSWORD`; the defaults in `application.properties` already match the compose command above (localhost, 8122, root, no password — see the "Configuration" section of [backend/AGENTS.md](backend/AGENTS.md)). A root `.env` (gitignored, see `.env.example`) is loaded into `./gradlew bootRun` automatically, so secrets do not have to be exported by hand.
-
-The SPA always calls `/api/*`; the Vite dev server proxies that to the backend and strips the `/api` prefix (`frontend/vite.config.ts`). Same-origin from the browser's point of view, so the backend needs no CORS config — keep it that way.
-
-Spotify user auth for `POST /consolidate` happens entirely in the browser (Authorization Code + PKCE, `frontend/src/lib/spotifyAuth.ts`). The backend still only does client-credentials for its own reads. The Spotify app needs the dev redirect URI `http://127.0.0.1:8123/callback` registered (Spotify rejects `http://localhost`).
+- The SPA always calls `/api/*`; the Vite dev server proxies it to the backend and strips the prefix. Same-origin from the browser, so the backend has no CORS config — keep it that way.
+- Spotify user auth for `POST /consolidate` starts in the browser (Authorization Code + PKCE); the backend exchanges the code and holds the login. The Spotify app needs the dev redirect URI registered — see the [Spotify app runbook](docs/runbooks/spotify-app.md).
 
 ## Config & secrets
 
-Env vars: `SPOTIFY_CLIENT_SECRET` (required, no default), the optional `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_USER` / `MYSQL_PASSWORD` (dev defaults `localhost` / `8122` / `root` / empty, in `application.properties`), and the optional `KTOR_PORT` (dev default `8120`). The gitignored `.env` supplies them locally — `build.gradle.kts` loads it into `bootRun` — and its versioned [`.env.example`](.env.example) is the reference for each var and its fixture.
+Env vars and their dev fixtures: [`.env.example`](.env.example) is the reference; the gitignored `.env` supplies them locally and is loaded into the backend run. There is no `dev-*` fixture — Spotify rejects a fake client secret. The single secrets doc is `docs/salgadinhos/secrets.md` in the salgadinhos repo.
 
-There is no `dev-*` fixture here: Spotify rejects a fake client secret, so dev needs a real value. The single secrets doc is `docs/salgadinhos/secrets.md` in the salgadinhos repo.
+## Documentation
 
-## Docker
-
-One image (repo-root `Dockerfile`, multi-stage) ships backend + frontend together: `supervisord` runs the Spring Boot jar (`API_PORT`/8080) and `nginx` (`deploy/nginx.conf.template` — serves the built SPA on `WEB_PORT`/8081 and reverse-proxies `/api` → the jar). `docker-compose.yml` at the root wraps the full stack — the app image plus its own MySQL — for local runs, publishing the block's `8120` (api), `8121` (web) and `8122` (mysql) while the container-internal ports stay fixed (`backend/docker-compose.yml` on its own runs just the DB, for a locally-run `./gradlew bootRun`). The schema comes from `backend/src/main/resources/db/migration/V*.sql`, applied by Flyway from `deploy/entrypoint.sh` before the app starts — see the "Database migrations" section of [backend/AGENTS.md](backend/AGENTS.md). `.github/workflows/docker-publish.yml` pushes `luiznaac/label-follower:latest` + `:v<run-number>` (a sequential build number, `github.run_number`) on master pushes that touch `backend/`, `frontend/`, `Dockerfile`, or `deploy/`.
+- [Family documentation standard](https://github.com/luiznaac/salgadinhos/blob/master/docs/salgadinhos/documentation-standard.md) — the README and doc-set contract this repo follows.
+- [refresh-docs skill](https://github.com/luiznaac/salgadinhos/blob/master/skills/refresh-docs/SKILL.md) — run its audit when a change hits the standard's change-kind matrix.
