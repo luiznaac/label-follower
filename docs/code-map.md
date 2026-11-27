@@ -28,8 +28,8 @@ Module → key files → seam index for the label-follower monorepo, plus the ap
 
 ### Root tooling — shims and gates
 **Purpose**: one command surface at the repo root and the checks CI and pre-commit run.
-**Files**: `package.json`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`, `.github/workflows/docker-publish.yml`, `docker-compose.yml`
-**Seam(s)**: **script shims** (`package.json`) delegate to the lane commands (`be:*`, `fe:*`, `check`); **checks seam** (`.pre-commit-config.yaml`) scopes detekt, typecheck and the lane test commands by path.
+**Files**: `package.json`, `.pre-commit-config.yaml`, `scripts/release.sh`, `.github/workflows/ci.yml`, `.github/workflows/docker-publish.yml`, `.github/release.yml`, `CHANGELOG.md`, `docker-compose.yml`
+**Seam(s)**: **script shims** (`package.json`) delegate to the lane commands (`be:*`, `fe:*`, `check`); **checks seam** (`.pre-commit-config.yaml`) scopes detekt, typecheck and the lane test commands by path; **release seam** (`docker-publish.yml` + `scripts/release.sh`) builds the image with `push: false` on pull requests and publishes immutable semver/short-SHA tags, moving `latest` only on a `v*` release tag — never on a merge.
 
 ## Entry points
 
